@@ -1,0 +1,1 @@
+The main purpuse of this project is to generate AI-created portfolio optimization software that can ingest research documents, chunk, index, and embedd them, and then use them for prompting in order to generate high quality methodology and code. The end goal is web-based app that allows user input.
