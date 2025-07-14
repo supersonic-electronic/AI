@@ -1,0 +1,35 @@
+# PDF Ingestion Configuration
+# Default settings for pdf2txt.py script
+
+# Directory Paths
+input_dir: "./data/papers"          # Directory containing PDF files to process
+text_dir: "./data/text"             # Directory for extracted text files (.txt)
+meta_dir: "./data/metadata"         # Directory for metadata JSON files
+
+# Logging Configuration
+log_level: "INFO"                   # Logging level: DEBUG, INFO, WARNING, ERROR
+log_to_file: true                   # Whether to log to file in addition to console
+log_file: "./logs/pdf_ingestion.log"  # Log file path (if log_to_file is true)
+
+# DOI Extraction
+doi_regex: "10\\.[0-9]{4,}[-._;()/:a-zA-Z0-9]*"  # Regex pattern for DOI extraction
+doi_prefixes:                       # Additional DOI prefixes to search for
+  - "doi:"
+  - "DOI:"
+  - "https://doi.org/"
+  - "http://dx.doi.org/"
+
+# Processing Options
+parallel_workers: 4                 # Number of parallel workers for PDF processing
+skip_existing: false                # Skip files that already have output (.txt/.json)
+show_progress: true                 # Show progress bar during processing
+
+# PyMuPDF Text Extraction Options
+preserve_reading_order: true        # Use sort=True in get_text() for reading order
+warn_empty_pages: true             # Log warnings for empty pages
+include_images: false              # Extract image information (future feature)
+
+# File Handling
+encoding: "utf-8"                  # Text file encoding
+json_indent: 2                     # JSON file indentation for readability
+overwrite_existing: true           # Overwrite existing output files
