@@ -28,6 +28,7 @@ show_progress: true                 # Show progress bar during processing
 preserve_reading_order: true        # Use sort=True in get_text() for reading order
 warn_empty_pages: true             # Log warnings for empty pages
 include_images: false              # Extract image information (future feature)
+pdf_chunk_size: 0                  # Pages per chunk for large PDFs (0 = no chunking)
 
 # File Handling
 encoding: "utf-8"                  # Text file encoding

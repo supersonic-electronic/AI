@@ -1,0 +1,58 @@
+2025-07-14 17:27:23,535 - INFO - Found 15 PDF files to process
+2025-07-14 17:27:23,549 - INFO - Using parallel processing with 4 workers
+2025-07-14 17:27:23,609 - WARNING - Empty page found: 1 in Asset Management A Systematic Approach to Factor Investing (2014) Andrew Ang.pdf
+2025-07-14 17:27:23,704 - WARNING - Empty page found: 7 in Asset Management A Systematic Approach to Factor Investing (2014) Andrew Ang.pdf
+2025-07-14 17:27:24,027 - WARNING - Empty page found: 15 in Asset Management A Systematic Approach to Factor Investing (2014) Andrew Ang.pdf
+2025-07-14 17:27:24,378 - INFO - Successfully processed: BlackLittermanIntuition.pdf
+2025-07-14 17:27:24,534 - WARNING - Empty page found: 7 in (Chapman and Hall_CRC Financial Mathematics Series) Roncalli, Thierry - Introduction to Risk Parity and Budgeting-CRC Press (2013).pdf
+2025-07-14 17:27:25,165 - INFO - Successfully processed: ApproachingMeanVarianceEffciency.pdf
+2025-07-14 17:27:25,505 - WARNING - Empty page found: 23 in (Chapman and Hall_CRC Financial Mathematics Series) Roncalli, Thierry - Introduction to Risk Parity and Budgeting-CRC Press (2013).pdf
+2025-07-14 17:27:25,740 - INFO - Successfully processed: 60YearsPortfolioOptim.pdf
+2025-07-14 17:27:25,924 - WARNING - Empty page found: 31 in (Chapman and Hall_CRC Financial Mathematics Series) Roncalli, Thierry - Introduction to Risk Parity and Budgeting-CRC Press (2013).pdf
+2025-07-14 17:27:25,944 - WARNING - Empty page found: 33 in (Chapman and Hall_CRC Financial Mathematics Series) Roncalli, Thierry - Introduction to Risk Parity and Budgeting-CRC Press (2013).pdf
+2025-07-14 17:27:28,364 - INFO - Successfully processed: FiftyYearsOfPortfolioOptimization.pdf
+2025-07-14 17:27:28,424 - WARNING - Empty page found: 1 in Handbook of portfolio construction _ contemporary -- Guerard J_B_, Jr_ (Ed_) -- 1st ed_ 2010, New York, NY, 2010 -- Springer US _ Imprint _ Springer -- 9780387774381 -- c8ff5fe7743c3b431ab952735f8f97f6 -- Anna’s Archive.pdf
+2025-07-14 17:27:28,441 - WARNING - Empty page found: 2 in Handbook of portfolio construction _ contemporary -- Guerard J_B_, Jr_ (Ed_) -- 1st ed_ 2010, New York, NY, 2010 -- Springer US _ Imprint _ Springer -- 9780387774381 -- c8ff5fe7743c3b431ab952735f8f97f6 -- Anna’s Archive.pdf
+2025-07-14 17:27:29,002 - WARNING - Empty page found: 17 in Handbook of portfolio construction _ contemporary -- Guerard J_B_, Jr_ (Ed_) -- 1st ed_ 2010, New York, NY, 2010 -- Springer US _ Imprint _ Springer -- 9780387774381 -- c8ff5fe7743c3b431ab952735f8f97f6 -- Anna’s Archive.pdf
+2025-07-14 17:27:29,021 - WARNING - Empty page found: 19 in Handbook of portfolio construction _ contemporary -- Guerard J_B_, Jr_ (Ed_) -- 1st ed_ 2010, New York, NY, 2010 -- Springer US _ Imprint _ Springer -- 9780387774381 -- c8ff5fe7743c3b431ab952735f8f97f6 -- Anna’s Archive.pdf
+2025-07-14 17:27:31,613 - WARNING - Empty page found: 179 in (Chapman and Hall_CRC Financial Mathematics Series) Roncalli, Thierry - Introduction to Risk Parity and Budgeting-CRC Press (2013).pdf
+2025-07-14 17:27:31,632 - WARNING - Empty page found: 181 in (Chapman and Hall_CRC Financial Mathematics Series) Roncalli, Thierry - Introduction to Risk Parity and Budgeting-CRC Press (2013).pdf
+2025-07-14 17:27:33,061 - WARNING - Empty page found: 203 in Asset Management A Systematic Approach to Factor Investing (2014) Andrew Ang.pdf
+2025-07-14 17:27:33,083 - WARNING - Empty page found: 205 in Asset Management A Systematic Approach to Factor Investing (2014) Andrew Ang.pdf
+2025-07-14 17:27:33,277 - WARNING - Empty page found: 221 in (Chapman and Hall_CRC Financial Mathematics Series) Roncalli, Thierry - Introduction to Risk Parity and Budgeting-CRC Press (2013).pdf
+2025-07-14 17:27:34,843 - WARNING - Empty page found: 141 in Handbook of portfolio construction _ contemporary -- Guerard J_B_, Jr_ (Ed_) -- 1st ed_ 2010, New York, NY, 2010 -- Springer US _ Imprint _ Springer -- 9780387774381 -- c8ff5fe7743c3b431ab952735f8f97f6 -- Anna’s Archive.pdf
+2025-07-14 17:27:35,216 - WARNING - Empty page found: 273 in (Chapman and Hall_CRC Financial Mathematics Series) Roncalli, Thierry - Introduction to Risk Parity and Budgeting-CRC Press (2013).pdf
+2025-07-14 17:27:36,113 - WARNING - Empty page found: 169 in Handbook of portfolio construction _ contemporary -- Guerard J_B_, Jr_ (Ed_) -- 1st ed_ 2010, New York, NY, 2010 -- Springer US _ Imprint _ Springer -- 9780387774381 -- c8ff5fe7743c3b431ab952735f8f97f6 -- Anna’s Archive.pdf
+2025-07-14 17:27:37,306 - WARNING - Empty page found: 329 in (Chapman and Hall_CRC Financial Mathematics Series) Roncalli, Thierry - Introduction to Risk Parity and Budgeting-CRC Press (2013).pdf
+2025-07-14 17:27:37,440 - WARNING - Empty page found: 195 in Handbook of portfolio construction _ contemporary -- Guerard J_B_, Jr_ (Ed_) -- 1st ed_ 2010, New York, NY, 2010 -- Springer US _ Imprint _ Springer -- 9780387774381 -- c8ff5fe7743c3b431ab952735f8f97f6 -- Anna’s Archive.pdf
+2025-07-14 17:27:38,780 - WARNING - Empty page found: 367 in (Chapman and Hall_CRC Financial Mathematics Series) Roncalli, Thierry - Introduction to Risk Parity and Budgeting-CRC Press (2013).pdf
+2025-07-14 17:27:39,270 - WARNING - Empty page found: 229 in Handbook of portfolio construction _ contemporary -- Guerard J_B_, Jr_ (Ed_) -- 1st ed_ 2010, New York, NY, 2010 -- Springer US _ Imprint _ Springer -- 9780387774381 -- c8ff5fe7743c3b431ab952735f8f97f6 -- Anna’s Archive.pdf
+2025-07-14 17:27:40,260 - WARNING - Empty page found: 407 in (Chapman and Hall_CRC Financial Mathematics Series) Roncalli, Thierry - Introduction to Risk Parity and Budgeting-CRC Press (2013).pdf
+2025-07-14 17:27:41,071 - INFO - Document (Chapman and Hall_CRC Financial Mathematics Series) Roncalli, Thierry - Introduction to Risk Parity and Budgeting-CRC Press (2013).pdf has 11 empty pages: [7, 23, 31, 33, 179, 181, 221, 273, 329, 367, 407]
+2025-07-14 17:27:41,171 - INFO - Successfully processed: (Chapman and Hall_CRC Financial Mathematics Series) Roncalli, Thierry - Introduction to Risk Parity and Budgeting-CRC Press (2013).pdf
+2025-07-14 17:27:42,412 - INFO - Successfully processed: Idzorek_onBL.pdf
+2025-07-14 17:27:42,686 - INFO - Successfully processed: MeanCVaRAlonso.pdf
+2025-07-14 17:27:43,170 - INFO - Successfully processed: MeanVariance-CAPM.pdf
+2025-07-14 17:27:43,974 - INFO - Successfully processed: MeanVarianceTheory.pdf
+2025-07-14 17:27:45,550 - INFO - Successfully processed: FabozziRobustPortfolioOptim.pdf
+2025-07-14 17:27:47,079 - WARNING - Empty page found: 398 in Handbook of portfolio construction _ contemporary -- Guerard J_B_, Jr_ (Ed_) -- 1st ed_ 2010, New York, NY, 2010 -- Springer US _ Imprint _ Springer -- 9780387774381 -- c8ff5fe7743c3b431ab952735f8f97f6 -- Anna’s Archive.pdf
+2025-07-14 17:27:47,382 - WARNING - Empty page found: 501 in Asset Management A Systematic Approach to Factor Investing (2014) Andrew Ang.pdf
+2025-07-14 17:27:47,414 - WARNING - Empty page found: 503 in Asset Management A Systematic Approach to Factor Investing (2014) Andrew Ang.pdf
+2025-07-14 17:27:48,587 - INFO - Successfully processed: RiskFactorsBL.pdf
+2025-07-14 17:27:51,919 - INFO - Successfully processed: RobustPortfolioOptim.pdf
+2025-07-14 17:27:52,828 - WARNING - Empty page found: 526 in Handbook of portfolio construction _ contemporary -- Guerard J_B_, Jr_ (Ed_) -- 1st ed_ 2010, New York, NY, 2010 -- Springer US _ Imprint _ Springer -- 9780387774381 -- c8ff5fe7743c3b431ab952735f8f97f6 -- Anna’s Archive.pdf
+2025-07-14 17:27:53,506 - WARNING - Empty page found: 633 in Asset Management A Systematic Approach to Factor Investing (2014) Andrew Ang.pdf
+2025-07-14 17:27:53,645 - WARNING - Empty page found: 637 in Asset Management A Systematic Approach to Factor Investing (2014) Andrew Ang.pdf
+2025-07-14 17:27:53,793 - WARNING - Empty page found: 643 in Asset Management A Systematic Approach to Factor Investing (2014) Andrew Ang.pdf
+2025-07-14 17:27:55,426 - WARNING - Empty page found: 599 in Handbook of portfolio construction _ contemporary -- Guerard J_B_, Jr_ (Ed_) -- 1st ed_ 2010, New York, NY, 2010 -- Springer US _ Imprint _ Springer -- 9780387774381 -- c8ff5fe7743c3b431ab952735f8f97f6 -- Anna’s Archive.pdf
+2025-07-14 17:27:56,025 - WARNING - Empty page found: 617 in Handbook of portfolio construction _ contemporary -- Guerard J_B_, Jr_ (Ed_) -- 1st ed_ 2010, New York, NY, 2010 -- Springer US _ Imprint _ Springer -- 9780387774381 -- c8ff5fe7743c3b431ab952735f8f97f6 -- Anna’s Archive.pdf
+2025-07-14 17:27:56,592 - WARNING - Empty page found: 703 in Asset Management A Systematic Approach to Factor Investing (2014) Andrew Ang.pdf
+2025-07-14 17:27:56,798 - WARNING - Empty page found: 637 in Handbook of portfolio construction _ contemporary -- Guerard J_B_, Jr_ (Ed_) -- 1st ed_ 2010, New York, NY, 2010 -- Springer US _ Imprint _ Springer -- 9780387774381 -- c8ff5fe7743c3b431ab952735f8f97f6 -- Anna’s Archive.pdf
+2025-07-14 17:27:57,262 - INFO - Document Asset Management A Systematic Approach to Factor Investing (2014) Andrew Ang.pdf has 11 empty pages: [1, 7, 15, 203, 205, 501, 503, 633, 637, 643, 703]
+2025-07-14 17:27:57,369 - INFO - Successfully processed: Asset Management A Systematic Approach to Factor Investing (2014) Andrew Ang.pdf
+2025-07-14 17:27:58,262 - WARNING - Empty page found: 691 in Handbook of portfolio construction _ contemporary -- Guerard J_B_, Jr_ (Ed_) -- 1st ed_ 2010, New York, NY, 2010 -- Springer US _ Imprint _ Springer -- 9780387774381 -- c8ff5fe7743c3b431ab952735f8f97f6 -- Anna’s Archive.pdf
+2025-07-14 17:28:00,538 - INFO - Successfully processed: Risk and Asset Allocation (Springer Finance) -- Attilio Meucci -- Springer Finance, Springer Finance, 1, 2005 -- Springer Berlin Heidelberg -- 9783540222132 -- 8402e9ef1629d828bff62fb3e94c01a3 -- Anna’s Archive.pdf
+2025-07-14 17:28:00,662 - WARNING - Empty page found: 793 in Handbook of portfolio construction _ contemporary -- Guerard J_B_, Jr_ (Ed_) -- 1st ed_ 2010, New York, NY, 2010 -- Springer US _ Imprint _ Springer -- 9780387774381 -- c8ff5fe7743c3b431ab952735f8f97f6 -- Anna’s Archive.pdf
+2025-07-14 17:28:00,803 - INFO - Document Handbook of portfolio construction _ contemporary -- Guerard J_B_, Jr_ (Ed_) -- 1st ed_ 2010, New York, NY, 2010 -- Springer US _ Imprint _ Springer -- 9780387774381 -- c8ff5fe7743c3b431ab952735f8f97f6 -- Anna’s Archive.pdf has 15 empty pages: [1, 2, 17, 19, 141, 169, 195, 229, 398, 526, 599, 617, 637, 691, 793]
+2025-07-14 17:28:00,820 - INFO - Successfully processed: Handbook of portfolio construction _ contemporary -- Guerard J_B_, Jr_ (Ed_) -- 1st ed_ 2010, New York, NY, 2010 -- Springer US _ Imprint _ Springer -- 9780387774381 -- c8ff5fe7743c3b431ab952735f8f97f6 -- Anna’s Archive.pdf
+2025-07-14 17:28:00,821 - INFO - Processing complete. Successes: 15, Failures: 0

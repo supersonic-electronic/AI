@@ -472,11 +472,32 @@ def main() -> None:
         help="Run in non-interactive mode (use config defaults and CLI args only)"
     )
     
+    # Mutually exclusive verbose/quiet group
+    verbosity_group = parser.add_mutually_exclusive_group()
+    verbosity_group.add_argument(
+        "--verbose", "-v",
+        action="store_true",
+        help="Verbose output (DEBUG level logging)"
+    )
+    verbosity_group.add_argument(
+        "--quiet", "-q", 
+        action="store_true",
+        help="Quiet mode (ERROR level logging only)"
+    )
+    
     args = parser.parse_args()
     
     try:
         # Load configuration
         config = load_config()
+        
+        # Validate configuration
+        try:
+            from .config_schema import validate_config
+            validate_config(config)
+        except ImportError:
+            # Skip validation if module not available
+            pass
         
         # Get interactive input if not in non-interactive mode
         if not args.non_interactive and not any([args.input_dir, args.text_dir, args.meta_dir]):
@@ -489,6 +510,12 @@ def main() -> None:
             config['text_dir'] = str(args.text_dir)
         if args.meta_dir:
             config['meta_dir'] = str(args.meta_dir)
+        
+        # Handle verbosity overrides
+        if args.verbose:
+            config['log_level'] = 'DEBUG'
+        elif args.quiet:
+            config['log_level'] = 'ERROR'
         
         # Create and run the ingestor
         ingestor = PDFIngestor(config)
