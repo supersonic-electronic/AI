@@ -20,7 +20,12 @@ dependencies = [
     "jsonschema (>=4.24.0,<5.0.0)",
     "pinecone-client (>=3.0.0,<4.0.0)",
     "chromadb (>=0.4.0,<1.0.0)",
-    "langchain-text-splitters (>=0.3.0,<0.4.0)"
+    "langchain-text-splitters (>=0.3.0,<0.4.0)",
+    "pydantic (>=2.0.0,<3.0.0)",
+    "pytest (>=7.0.0,<8.0.0)",
+    "pytest-asyncio (>=0.21.0,<1.0.0)",
+    "pytest-mock (>=3.10.0,<4.0.0)",
+    "mathpix (>=3.0.0,<4.0.0)"
 ]
 
 
@@ -35,3 +40,63 @@ flake8 = "^7.3.0"
 
 [tool.poetry.dependencies]
 python = ">=3.9,<4.0"
+
+[project.entry-points."project.plugins"]
+# Example plugin entries - actual plugins would be added here
+# pdf_enhanced = "my_plugins.extractors:EnhancedPDFExtractor"
+
+[tool.isort]
+profile = "black"
+multi_line_output = 3
+line_length = 88
+known_first_party = ["src"]
+
+[tool.black]
+line-length = 88
+target-version = ["py39"]
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  # directories
+  \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | build
+  | dist
+)/
+'''
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "--strict-markers",
+    "--strict-config",
+    "--verbose",
+]
+markers = [
+    "slow: marks tests as slow",
+    "integration: marks tests as integration tests",
+    "unit: marks tests as unit tests",
+]
+
+[tool.coverage.run]
+source = ["src"]
+omit = [
+    "*/tests/*",
+    "*/test_*.py",
+    "*/__init__.py",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+]

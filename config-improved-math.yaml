@@ -1,0 +1,81 @@
+# Improved Configuration for Mathematical Content Detection
+# This configuration reduces false positives and improves precision
+
+# Directory Paths
+input_dir: "./data/papers"
+text_dir: "./data/text"
+meta_dir: "./data/metadata"
+math_dir: "./data/math"
+
+# Logging Configuration
+log_level: "INFO"
+log_to_file: true
+log_file: "./logs/pdf_ingestion.log"
+log_format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+
+# DOI Extraction
+doi_regex: "10\\.[0-9]{4,}[-._;()/:a-zA-Z0-9]*"
+doi_prefixes:
+  - "doi:"
+  - "DOI:"
+  - "https://doi.org/"
+  - "http://dx.doi.org/"
+
+# Processing Options
+parallel_workers: 4
+skip_existing: false
+show_progress: true
+
+# PyMuPDF Text Extraction Options
+preserve_reading_order: true
+warn_empty_pages: true
+include_images: false
+pdf_chunk_size: 0
+
+# Enhanced Mathematical Formula Extraction
+extract_math: true
+math_ocr_fallback: false  # Disable OCR fallback (no API keys configured)
+separate_math_files: true
+math_detection_threshold: 3  # Optimal threshold for balanced precision/recall
+
+# API Keys (set these in environment variables or uncomment and add your keys)
+# openai_api_key: "your_openai_api_key_here"
+# mathpix_app_id: "your_mathpix_app_id_here"
+# mathpix_app_key: "your_mathpix_app_key_here"
+# pinecone_api_key: "your_pinecone_api_key_here"
+
+# Mathpix SDK Configuration
+mathpix_timeout: 30.0
+mathpix_max_retries: 3
+mathpix_retry_delay: 1.0
+
+# Document Chunking and Embedding
+chunk_size: 500
+chunk_overlap: 50
+embedding_model: "text-embedding-3-small"
+embedding_batch_size: 30
+max_retries: 3
+retry_delay: 1.0
+
+# Vector Store Configuration - Pinecone
+pinecone_index_name: "document-embeddings"
+pinecone_environment: "us-east-1-aws"
+
+# Vector Store Configuration - Chroma
+chroma_persist_directory: "./data/chroma_db"
+chroma_collection_name: "document_embeddings"
+
+# File Handling
+encoding: "utf-8"
+json_indent: 2
+overwrite_existing: true
+
+# Performance Settings
+openai_timeout: 60.0
+concurrent_requests: 5
+
+# Plugin Configuration
+plugin_search_paths:
+  - "plugins"
+  - "src.plugins"
+enable_plugins: true

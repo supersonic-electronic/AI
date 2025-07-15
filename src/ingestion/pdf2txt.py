@@ -1,14 +1,12 @@
 """
 Enhanced PDF text extraction module with advanced mathematical formula support.
 
-This module provides a PDFIngestorEnhanced class that reliably extracts and preserves
+This module provides a PDFIngestor class that reliably extracts and preserves
 complex mathematical formulas, including multi-line equations, integrals, summations,
 and superscripts/subscripts from PDF files.
 """
 
 import argparse
-import base64
-import io
 import json
 import logging
 import re
@@ -21,19 +19,10 @@ import fitz  # PyMuPDF
 import yaml
 from tqdm import tqdm
 
-try:
-    from PIL import Image
-    PIL_AVAILABLE = True
-except ImportError:
-    PIL_AVAILABLE = False
-    logging.warning("PIL not available, image extraction disabled")
-
-try:
-    import openai
-    OPENAI_AVAILABLE = True
-except ImportError:
-    OPENAI_AVAILABLE = False
-    logging.warning("OpenAI not available, math OCR fallback disabled")
+from src.logging_config import get_logger, setup_logging
+from src.settings import Settings
+from .math_detector import MathDetector
+from .improved_math_detector import ImprovedMathDetector
 
 
 class MathBlock:
@@ -121,130 +110,46 @@ class PDFIngestor:
     This class processes PDF files and extracts both regular text and mathematical
     formulas with high fidelity, preserving complex mathematical notation and
     providing LaTeX representations where possible.
-    
-    Note: This class has been enhanced from the original PDFIngestor to include
-    mathematical formula detection and extraction capabilities.
     """
     
-    # Mathematical font patterns
-    MATH_FONTS = {
-        'CMMI', 'CMSY', 'CMEX', 'CMTI', 'CMR',  # Computer Modern
-        'MSAM', 'MSBM',  # AMS fonts
-        'MTMI', 'MTSY',  # MathTime
-        'Symbol', 'MT-Symbol', 'ZapfDingbats'  # Symbol fonts
-    }
-    
-    # Common mathematical symbols to LaTeX mapping
-    SYMBOL_TO_LATEX = {
-        '∫': r'\int',
-        '∑': r'\sum',
-        '∏': r'\prod',
-        '∂': r'\partial',
-        '∇': r'\nabla',
-        '∞': r'\infty',
-        '≤': r'\leq',
-        '≥': r'\geq',
-        '≠': r'\neq',
-        '≈': r'\approx',
-        '±': r'\pm',
-        '∓': r'\mp',
-        '×': r'\times',
-        '÷': r'\div',
-        '√': r'\sqrt',
-        'α': r'\alpha',
-        'β': r'\beta',
-        'γ': r'\gamma',
-        'δ': r'\delta',
-        'ε': r'\epsilon',
-        'θ': r'\theta',
-        'λ': r'\lambda',
-        'μ': r'\mu',
-        'π': r'\pi',
-        'σ': r'\sigma',
-        'φ': r'\phi',
-        'ψ': r'\psi',
-        'ω': r'\omega',
-        'Γ': r'\Gamma',
-        'Δ': r'\Delta',
-        'Θ': r'\Theta',
-        'Λ': r'\Lambda',
-        'Π': r'\Pi',
-        'Σ': r'\Sigma',
-        'Φ': r'\Phi',
-        'Ψ': r'\Psi',
-        'Ω': r'\Omega',
-    }
-    
-    def __init__(self, config: Dict[str, Any]) -> None:
+    def __init__(self, settings: Settings) -> None:
         """
-        Initialize the enhanced PDFIngestor with configuration.
+        Initialize the enhanced PDFIngestor with settings.
         
         Args:
-            config: Configuration dictionary loaded from YAML
+            settings: Application settings instance
         """
-        self.config = config
-        self.input_dir = Path(config['input_dir'])
-        self.text_dir = Path(config['text_dir'])
-        self.meta_dir = Path(config['meta_dir'])
+        self.settings = settings
         
-        # Create math output directory
-        self.math_dir = Path(config.get('math_dir', './data/math'))
-        self.math_dir.mkdir(parents=True, exist_ok=True)
+        # Setup directories
+        self.input_dir = settings.input_dir
+        self.text_dir = settings.text_dir
+        self.meta_dir = settings.meta_dir
+        self.math_dir = settings.math_dir
         
         # Create directories if they don't exist
-        self.input_dir.mkdir(parents=True, exist_ok=True)
-        self.text_dir.mkdir(parents=True, exist_ok=True)
-        self.meta_dir.mkdir(parents=True, exist_ok=True)
+        settings.create_directories()
         
         # Setup logging
-        self._setup_logging()
+        self.logger = get_logger(__name__)
         
         # Compile DOI regex pattern
-        self.doi_pattern = re.compile(config.get('doi_regex', r'10\.[0-9]{4,}[-._;()/:a-zA-Z0-9]*'))
-        self.doi_prefixes = config.get('doi_prefixes', ['doi:', 'DOI:', 'https://doi.org/', 'http://dx.doi.org/'])
+        self.doi_pattern = re.compile(settings.doi_regex)
+        self.doi_prefixes = settings.doi_prefixes
         
-        # Math extraction settings
-        self.extract_math = config.get('extract_math', True)
-        self.math_ocr_fallback = config.get('math_ocr_fallback', False)
-        self.separate_math_files = config.get('separate_math_files', True)
-        self.math_detection_threshold = config.get('math_detection_threshold', 3)
+        # Configuration for backward compatibility
+        self.config = settings.dict()
         
-        # Initialize OpenAI client if available and configured
-        self.openai_client = None
-        if OPENAI_AVAILABLE and self.math_ocr_fallback:
-            api_key = config.get('openai_api_key') or config.get('OPENAI_API_KEY')
-            if api_key:
-                self.openai_client = openai.OpenAI(api_key=api_key)
-            else:
-                self.logger.warning("Math OCR fallback enabled but no OpenAI API key provided")
+        # Mathematical content extraction settings
+        self.extract_math = settings.extract_math
+        self.separate_math_files = settings.separate_math_files
+        
+        # Initialize math detector if math extraction is enabled
+        self.math_detector = None
+        if self.extract_math:
+            self.math_detector = ImprovedMathDetector(settings)
+            self.logger.info("Mathematical content detection enabled")
     
-    def _setup_logging(self) -> None:
-        """Setup logging configuration based on config settings."""
-        log_level = getattr(logging, self.config.get('log_level', 'INFO').upper())
-        
-        # Create formatter
-        formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
-        
-        # Setup logger
-        self.logger = logging.getLogger(__name__)
-        self.logger.setLevel(log_level)
-        
-        # Clear existing handlers
-        self.logger.handlers.clear()
-        
-        # Console handler
-        console_handler = logging.StreamHandler()
-        console_handler.setFormatter(formatter)
-        self.logger.addHandler(console_handler)
-        
-        # File handler if enabled
-        if self.config.get('log_to_file', False):
-            log_file = Path(self.config.get('log_file', './logs/pdf_ingestion.log'))
-            log_file.parent.mkdir(parents=True, exist_ok=True)
-            
-            file_handler = logging.FileHandler(log_file)
-            file_handler.setFormatter(formatter)
-            self.logger.addHandler(file_handler)
     
     def _is_math_font(self, font_name: str) -> bool:
         """
