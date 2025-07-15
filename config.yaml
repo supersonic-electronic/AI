@@ -30,6 +30,14 @@ warn_empty_pages: true             # Log warnings for empty pages
 include_images: false              # Extract image information (future feature)
 pdf_chunk_size: 0                  # Pages per chunk for large PDFs (0 = no chunking)
 
+# Mathematical Formula Extraction
+extract_math: true                 # Enable enhanced mathematical formula extraction
+math_ocr_fallback: false          # Use OCR fallback for complex formulas (requires OpenAI API)
+separate_math_files: true         # Save mathematical blocks to separate .math files
+math_dir: "./data/math"           # Directory for mathematical formula files
+openai_api_key: ""                # OpenAI API key for math OCR (optional)
+math_detection_threshold: 3       # Minimum score for mathematical content detection (default: 3)
+
 # File Handling
 encoding: "utf-8"                  # Text file encoding
 json_indent: 2                     # JSON file indentation for readability

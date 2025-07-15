@@ -12,6 +12,7 @@ The PDF ingestion system has evolved to include:
 - **Global logging mechanism** with file output and structured entry formatting
 - **Plugin-style architecture** for extensible document format support
 - **Large PDF streaming** support for memory-efficient processing
+- **Advanced mathematical formula extraction** with bidirectional linking and semantic grouping
 
 ## Configuration
 
@@ -21,6 +22,7 @@ The system uses a YAML configuration file (`config.yaml`) to define default sett
 - **`input_dir`**: Directory containing PDF files to process (default: `"./data/papers"`)
 - **`text_dir`**: Directory for extracted text files (.txt) (default: `"./data/text"`)
 - **`meta_dir`**: Directory for metadata JSON files (default: `"./data/metadata"`)
+- **`math_dir`**: Directory for mathematical formula files (.math, .refs) (default: `"./data/math"`)
 
 ### Logging Configuration
 - **`log_level`**: Logging verbosity level (default: `"INFO"`, options: DEBUG, INFO, WARNING, ERROR)
@@ -41,6 +43,13 @@ The system uses a YAML configuration file (`config.yaml`) to define default sett
 - **`warn_empty_pages`**: Log warnings for empty pages (default: `true`)
 - **`include_images`**: Extract image information - future feature (default: `false`)
 - **`pdf_chunk_size`**: Pages per chunk for large PDFs (default: `0` - no chunking)
+
+### Mathematical Formula Extraction
+- **`extract_math`**: Enable mathematical formula detection and extraction (default: `true`)
+- **`separate_math_files`**: Save mathematical formulas to separate .math files (default: `true`)
+- **`math_detection_threshold`**: Minimum score for mathematical content detection (default: `3`)
+- **`math_ocr_fallback`**: Use OpenAI OCR for low-confidence formulas (default: `false`)
+- **`openai_api_key`**: API key for OpenAI OCR fallback (default: `""`)
 
 ### File Handling
 - **`encoding`**: Text file encoding (default: `"utf-8"`)
@@ -171,6 +180,133 @@ skip_existing: true
 
 This enables interrupted processing sessions to resume efficiently without reprocessing completed files.
 
+## Advanced Mathematical Formula Extraction
+
+The system includes sophisticated mathematical formula detection, extraction, and linking capabilities that go far beyond simple text extraction.
+
+### Mathematical Content Detection
+
+**Multi-Level Detection Strategy:**
+- **Text-based analysis**: Detects mathematical patterns in extracted text using regex and scoring algorithms
+- **Font analysis**: Identifies mathematical fonts (Computer Modern, AMS, Symbol fonts)
+- **Block-level analysis**: Examines PDF rendering blocks for mathematical structure
+- **OCR fallback**: Optional OpenAI GPT-4 Vision integration for complex formulas
+
+**Detection Criteria:**
+- Mathematical symbols (∫, ∑, ∏, ∂, ∇, ∞, ≤, ≥, ≠, ≈, ±)
+- Equation patterns (variable = expression)
+- Mathematical operators (+, -, *, /, ^, parentheses)
+- Variable patterns (x₁, x₀, R, μ, σ)
+- Confidence scoring based on multiple factors
+
+### Enhanced Linking System
+
+**Bidirectional References:**
+Each mathematical expression gets a unique identifier enabling precise cross-referencing between text and math files.
+
+**Character-Level Positioning:**
+- **Document-wide character offsets**: Precise positioning in full document text
+- **Line-based positioning**: Line numbers for text-based references
+- **Bounding box coordinates**: Exact location on PDF pages
+
+**Example Enhanced Text Markers:**
+```
+[MATHREF_math_p1_l15_3057] $x_{1} = Rx_{0} and x_{1} = (1 + r)x_{0} .$ @group:general_math @related:MATHREF_math_p1_l7_5023,MATHREF_math_p1_l9_3471 @confidence:0.50
+```
+
+### Semantic Grouping
+
+Mathematical expressions are automatically categorized:
+
+- **`portfolio_theory`**: Portfolio and finance-related expressions
+- **`variable_definition`**: Single variable definitions (e.g., R =, μ =)
+- **`equation`**: Complex equations with multiple operations
+- **`ratio`**: Ratios and rate calculations  
+- **`matrix_vector`**: Matrix operations and summations (∑, ∏, ∫)
+- **`statistics`**: Probability and statistical expressions
+- **`general_math`**: Other mathematical content
+
+**Related Expression Discovery:**
+- Expressions sharing variables are automatically cross-referenced
+- Semantic groups establish conceptual relationships
+- Context preservation maintains surrounding text
+
+### Output Files
+
+**Enhanced Text Files** (`.txt`):
+- Original text with enhanced mathematical markers
+- Bidirectional reference IDs (MATHREF_)
+- Inline semantic annotations (@group:, @related:, @confidence:)
+
+**Mathematical Formula Files** (`.math`):
+JSON files containing detailed mathematical block information:
+```json
+{
+  "block_id": "math_p1_l7_5023",
+  "page_num": 1,
+  "char_position": {"start": 323, "end": 325},
+  "line_position": {"start": 7, "end": 7},
+  "raw_text": "x1",
+  "latex": "$x_{1}$",
+  "confidence": 0.1,
+  "semantic_group": "general_math",
+  "related_blocks": ["math_p1_l9_3471", "math_p1_l13_3471"],
+  "context": {"before": "ratio", "after": "R ="}
+}
+```
+
+**Reference Mapping Files** (`.refs`):
+Bidirectional lookup tables for efficient cross-referencing:
+```json
+{
+  "1": {
+    "math_to_text": {"math_p1_l7_5023": 541},
+    "text_to_math": {"541": "math_p1_l7_5023"},
+    "semantic_groups": {"general_math": ["math_p1_l7_5023"]}
+  }
+}
+```
+
+### LaTeX Conversion
+
+**Automatic LaTeX Generation:**
+- Common mathematical symbols converted to LaTeX notation
+- Subscripts and superscripts properly formatted (x₁ → $x_{1}$)
+- Equation structure preservation
+- Unicode mathematical symbols mapped to LaTeX equivalents
+
+**Supported Conversions:**
+- Variables: x1 → $x_{1}$, x0 → $x_{0}$
+- Symbols: ∫ → \int, ∑ → \sum, ∞ → \infty
+- Operators: ≤ → \leq, ≥ → \geq, ≠ → \neq
+
+### Usage Examples
+
+**Basic Mathematical Extraction:**
+```python
+from src.ingestion.pdf2txt import PDFIngestor
+from pathlib import Path
+
+ingestor = PDFIngestor(config)
+text, document_metadata = ingestor.extract_text_with_math(Path("paper.pdf"))
+
+# Access mathematical content
+math_blocks = document_metadata['math_blocks']
+reference_maps = document_metadata['reference_maps']
+semantic_groups = document_metadata['document_stats']['semantic_groups']
+```
+
+**Cross-Reference Lookup:**
+```python
+# Find text position from math block ID
+ref_map = document_metadata['reference_maps']['1']['math_to_text']
+text_position = ref_map['math_p1_l7_5023']
+
+# Find math block from text position  
+text_to_math = document_metadata['reference_maps']['1']['text_to_math']
+math_id = text_to_math['541']
+```
+
 ## Global Logging Mechanism
 
 ### Default Log Configuration
@@ -205,13 +341,16 @@ log_file: "./custom/path/ingestion.log"
 
 For each processed PDF file `document.pdf`, the system generates:
 
-- **Text file**: `{text_dir}/document.txt` - Extracted text content with preserved reading order
+- **Text file**: `{text_dir}/document.txt` - Extracted text with enhanced mathematical markers
 - **Metadata file**: `{meta_dir}/document.json` - JSON containing:
   - Basic file info (filename, file_size)
   - PDF metadata (title, author, subject, creator, producer)
   - Timestamps (creation_date, modification_date)
   - Keywords and extracted DOI
+  - Mathematical content statistics (semantic groups, block counts)
   - Only non-empty fields are included
+- **Mathematical formula file**: `{math_dir}/document.math` - Detailed mathematical expressions (when enabled)
+- **Reference mapping file**: `{math_dir}/document.refs` - Bidirectional linking data (when enabled)
 
 ## Plugin Architecture
 

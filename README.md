@@ -5,6 +5,7 @@ An AI-driven portfolio optimization system that ingests research documents, proc
 ## Features
 
 - **PDF Document Ingestion**: Advanced PDF text and metadata extraction with parallel processing
+- **Mathematical Formula Extraction**: Sophisticated mathematical content detection with bidirectional linking
 - **YAML-based Configuration**: Centralized settings management with smart defaults
 - **Interactive CLI**: User-friendly command-line interface with configurable prompts
 - **Enhanced DOI Detection**: Robust regex-based DOI extraction from academic papers
@@ -39,6 +40,8 @@ The system requires the following key packages:
 - **PyYAML** (`pyyaml`): YAML configuration file parsing
 - **tqdm**: Progress bar display for batch operations
 - **jsonschema**: Configuration validation (optional but recommended)
+- **Pillow** (`pillow`): Image processing for mathematical formula extraction
+- **openai**: OpenAI API integration for advanced mathematical OCR (optional)
 
 ## Usage
 
@@ -106,6 +109,7 @@ The system uses `config.yaml` for centralized configuration. Key settings:
 - **`input_dir`**: Source directory containing PDF files to process
 - **`text_dir`**: Output directory for extracted text files (.txt)
 - **`meta_dir`**: Output directory for metadata JSON files
+- **`math_dir`**: Output directory for mathematical formula files (.math, .refs)
 
 ### Processing Options
 - **`parallel_workers`**: Number of parallel processing threads (default: 4)
@@ -121,6 +125,13 @@ The system uses `config.yaml` for centralized configuration. Key settings:
 ### DOI Extraction
 - **`doi_regex`**: Regular expression pattern for DOI detection
 - **`doi_prefixes`**: List of DOI prefixes to search for in metadata
+
+### Mathematical Formula Extraction
+- **`extract_math`**: Enable advanced mathematical formula detection and extraction
+- **`separate_math_files`**: Save mathematical formulas to separate .math files
+- **`math_detection_threshold`**: Minimum confidence score for mathematical content
+- **`math_ocr_fallback`**: Use OpenAI OCR for complex mathematical formulas
+- **`openai_api_key`**: API key for OpenAI integration (when OCR fallback enabled)
 
 ### Text Processing
 - **`preserve_reading_order`**: Maintain reading order during text extraction
@@ -172,8 +183,9 @@ poetry run python src/ingestion/pdf2txt.py --config ./my-config.yaml
 │       └── extractors/      # Document format extractors
 ├── data/
 │   ├── papers/             # Input PDFs (default)
-│   ├── text/               # Extracted text output
-│   └── metadata/           # JSON metadata output
+│   ├── text/               # Extracted text output with mathematical markers
+│   ├── metadata/           # JSON metadata output
+│   └── math/               # Mathematical formula files (.math, .refs)
 ├── logs/                   # Processing logs
 ├── tests/                  # Unit tests
 └── docs/
@@ -185,9 +197,16 @@ poetry run python src/ingestion/pdf2txt.py --config ./my-config.yaml
 For each processed PDF `document.pdf`, the system generates:
 
 ### Text File (`./data/text/document.txt`)
-- Plain text content extracted from all pages
+- Plain text content with enhanced mathematical markers
+- Bidirectional references to mathematical expressions
+- Semantic annotations for mathematical content
 - Preserved reading order when configured
 - UTF-8 encoding by default
+
+Example enhanced text with mathematical markers:
+```
+[MATHREF_math_p1_l15_3057] $x_{1} = Rx_{0} and x_{1} = (1 + r)x_{0} .$ @group:general_math @related:MATHREF_math_p1_l7_5023 @confidence:0.50
+```
 
 ### Metadata File (`./data/metadata/document.json`)
 ```json
@@ -198,9 +217,32 @@ For each processed PDF `document.pdf`, the system generates:
   "author": "Author Name",
   "creation_date": "D:20231201120000",
   "doi": "10.1234/example.paper",
-  "keywords": "portfolio, optimization, research"
+  "keywords": "portfolio, optimization, research",
+  "math_blocks_count": 47,
+  "has_mathematical_content": true,
+  "semantic_groups": {
+    "portfolio_theory": 15,
+    "general_math": 25,
+    "equation": 7
+  }
 }
 ```
+
+### Mathematical Formula File (`./data/math/document.math`)
+Detailed JSON containing all mathematical expressions with:
+- Unique block identifiers for cross-referencing
+- Character-level positioning in the document
+- LaTeX representations of formulas
+- Semantic grouping and confidence scores
+- Related expression cross-references
+- Context preservation (surrounding text)
+
+### Reference Mapping File (`./data/math/document.refs`)
+Bidirectional lookup tables enabling:
+- Find text position from mathematical expression ID
+- Find mathematical expression from text position
+- Semantic group organization
+- Efficient cross-referencing for downstream processing
 
 ## Development
 
