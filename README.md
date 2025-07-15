@@ -29,7 +29,9 @@ cd AI
 poetry install
 ```
 
-### Using pip
+**Note: This project uses Poetry for dependency management. All commands should be run with `poetry run` or within the Poetry environment (`poetry shell`).**
+
+### Using pip (Alternative)
 ```bash
 git clone <repository-url>
 cd AI
@@ -56,13 +58,13 @@ The system provides a unified CLI with subcommands for different operations. All
 
 ```bash
 # Use custom configuration file
-python -m src.cli --config custom-config.yaml <command>
+poetry run python -m src.cli --config custom-config.yaml <command>
 
 # Enable verbose logging
-python -m src.cli --verbose <command>
+poetry run python -m src.cli --verbose <command>
 
 # Enable quiet mode (errors only)
-python -m src.cli --quiet <command>
+poetry run python -m src.cli --quiet <command>
 ```
 
 ### Ingest Command
@@ -71,22 +73,22 @@ Convert PDFs to text and metadata with mathematical formula extraction:
 
 ```bash
 # Basic usage with defaults from config.yaml
-python -m src.cli ingest
+poetry run python -m src.cli ingest
 
 # Custom directories
-python -m src.cli ingest --input-dir ./research-papers --text-dir ./output
+poetry run python -m src.cli ingest --input-dir ./research-papers --text-dir ./output
 
 # Disable mathematical formula extraction
-python -m src.cli ingest --no-math
+poetry run python -m src.cli ingest --no-math
 
 # Enable math OCR fallback (requires API keys)
-python -m src.cli ingest --math-ocr
+poetry run python -m src.cli ingest --math-ocr
 
 # Use parallel processing
-python -m src.cli ingest --parallel-workers 8
+poetry run python -m src.cli ingest --parallel-workers 8
 
 # Skip files that already have output
-python -m src.cli ingest --skip-existing
+poetry run python -m src.cli ingest --skip-existing
 ```
 
 ### Chunk Command
@@ -95,16 +97,16 @@ Split extracted text into chunks with mathematical content preservation:
 
 ```bash
 # Basic chunking with defaults
-python -m src.cli chunk
+poetry run python -m src.cli chunk
 
 # Custom chunk parameters
-python -m src.cli chunk --chunk-size 1000 --chunk-overlap 100
+poetry run python -m src.cli chunk --chunk-size 1000 --chunk-overlap 100
 
 # Preserve mathematical content boundaries
-python -m src.cli chunk --preserve-math
+poetry run python -m src.cli chunk --preserve-math
 
 # Custom input and output directories
-python -m src.cli chunk --input-dir ./custom/text --output-dir ./custom/chunks
+poetry run python -m src.cli chunk --input-dir ./custom/text --output-dir ./custom/chunks
 ```
 
 ### Embed Command
@@ -113,16 +115,16 @@ Generate embeddings and store in vector databases:
 
 ```bash
 # Use local Chroma database (default)
-python -m src.cli embed --local
+poetry run python -m src.cli embed --local
 
 # Use Pinecone cloud database
-python -m src.cli embed --vectorstore pinecone --namespace research-docs
+poetry run python -m src.cli embed --vectorstore pinecone --namespace research-docs
 
 # Custom embedding parameters
-python -m src.cli embed --batch-size 50 --embedding-model text-embedding-3-large
+poetry run python -m src.cli embed --batch-size 50 --embedding-model text-embedding-3-large
 
 # Custom input directory
-python -m src.cli embed --input-dir ./custom/chunks
+poetry run python -m src.cli embed --input-dir ./custom/chunks
 ```
 
 ### Test Command
@@ -131,20 +133,20 @@ Run the test suite with various options:
 
 ```bash
 # Run all tests
-python -m src.cli test
+poetry run python -m src.cli test
 
 # Run with coverage reporting
-python -m src.cli test --coverage
+poetry run python -m src.cli test --coverage
 
 # Run specific test markers
-python -m src.cli test --markers unit
-python -m src.cli test --markers integration
+poetry run python -m src.cli test --markers unit
+poetry run python -m src.cli test --markers integration
 
 # Run specific test file or directory
-python -m src.cli test --test-path tests/test_math_detector.py
+poetry run python -m src.cli test --test-path tests/test_math_detector.py
 
 # Stop after N failures
-python -m src.cli test --maxfail 3
+poetry run python -m src.cli test --maxfail 3
 ```
 
 ### Complete Workflow Examples
@@ -153,15 +155,15 @@ Process documents end-to-end:
 
 ```bash
 # Full pipeline with custom settings
-python -m src.cli --config production-config.yaml ingest --parallel-workers 8
-python -m src.cli --config production-config.yaml chunk --chunk-size 800
-python -m src.cli --config production-config.yaml embed --vectorstore pinecone --namespace prod-docs
+poetry run python -m src.cli --config production-config.yaml ingest --parallel-workers 8
+poetry run python -m src.cli --config production-config.yaml chunk --chunk-size 800
+poetry run python -m src.cli --config production-config.yaml embed --vectorstore pinecone --namespace prod-docs
 
 # Development workflow with testing
-python -m src.cli ingest --verbose --no-math
-python -m src.cli chunk --preserve-math
-python -m src.cli embed --local
-python -m src.cli test --coverage
+poetry run python -m src.cli ingest --verbose --no-math
+poetry run python -m src.cli chunk --preserve-math
+poetry run python -m src.cli embed --local
+poetry run python -m src.cli test --coverage
 ```
 
 ## Configuration
@@ -370,7 +372,14 @@ python src/ingestion/chunk_embed.py --input-dir ./custom/text --config ./custom-
 
 ### Running Tests
 ```bash
+# Run all tests
 poetry run pytest tests/ -v
+
+# Run with coverage
+poetry run pytest tests/ -v --cov=src --cov-report=html
+
+# Run specific test file
+poetry run pytest tests/test_math_detector.py -v
 ```
 
 ### Adding New Document Formats
@@ -386,7 +395,7 @@ The system includes JSON schema validation for `config.yaml`. Invalid configurat
 1. Fork the repository
 2. Create a feature branch
 3. Add tests for new functionality
-4. Ensure all tests pass: `poetry run pytest`
+4. Ensure all tests pass: `poetry run pytest tests/ -v`
 5. Submit a pull request
 
 ## License
