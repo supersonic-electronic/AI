@@ -42,3 +42,20 @@ math_detection_threshold: 3       # Minimum score for mathematical content detec
 encoding: "utf-8"                  # Text file encoding
 json_indent: 2                     # JSON file indentation for readability
 overwrite_existing: true           # Overwrite existing output files
+
+# Document Chunking and Embedding Configuration
+chunk_size: 500                    # Target size for text chunks (characters)
+chunk_overlap: 50                  # Overlap between adjacent chunks (characters)
+embedding_model: "text-embedding-3-small"  # OpenAI embedding model
+embedding_batch_size: 30           # Number of texts to embed per batch
+max_retries: 3                     # Maximum retry attempts for embedding requests
+retry_delay: 1.0                   # Base delay between retries (seconds)
+
+# Vector Store Configuration - Pinecone
+pinecone_api_key: ""               # Pinecone API key
+pinecone_index_name: "document-embeddings"  # Pinecone index name
+pinecone_environment: "us-east-1-aws"       # Pinecone environment
+
+# Vector Store Configuration - Chroma (Local)
+chroma_persist_directory: "./data/chroma_db"   # Local Chroma database directory
+chroma_collection_name: "document_embeddings"  # Chroma collection name

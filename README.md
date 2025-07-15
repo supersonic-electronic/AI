@@ -6,6 +6,7 @@ An AI-driven portfolio optimization system that ingests research documents, proc
 
 - **PDF Document Ingestion**: Advanced PDF text and metadata extraction with parallel processing
 - **Mathematical Formula Extraction**: Sophisticated mathematical content detection with bidirectional linking
+- **Document Chunking and Embedding**: Advanced text chunking with mathematical content preservation and vector store integration
 - **YAML-based Configuration**: Centralized settings management with smart defaults
 - **Interactive CLI**: User-friendly command-line interface with configurable prompts
 - **Enhanced DOI Detection**: Robust regex-based DOI extraction from academic papers
@@ -41,7 +42,10 @@ The system requires the following key packages:
 - **tqdm**: Progress bar display for batch operations
 - **jsonschema**: Configuration validation (optional but recommended)
 - **Pillow** (`pillow`): Image processing for mathematical formula extraction
-- **openai**: OpenAI API integration for advanced mathematical OCR (optional)
+- **openai**: OpenAI API integration for advanced mathematical OCR and embeddings
+- **langchain-text-splitters**: Advanced text chunking with mathematical content awareness
+- **pinecone-client**: Cloud vector database integration (optional)
+- **chromadb**: Local vector database integration (optional)
 
 ## Usage
 
@@ -131,7 +135,15 @@ The system uses `config.yaml` for centralized configuration. Key settings:
 - **`separate_math_files`**: Save mathematical formulas to separate .math files
 - **`math_detection_threshold`**: Minimum confidence score for mathematical content
 - **`math_ocr_fallback`**: Use OpenAI OCR for complex mathematical formulas
-- **`openai_api_key`**: API key for OpenAI integration (when OCR fallback enabled)
+- **`openai_api_key`**: API key for OpenAI integration (required for OCR and embeddings)
+
+### Document Chunking and Embedding
+- **`chunk_size`**: Target size for text chunks in characters
+- **`chunk_overlap`**: Overlap between adjacent chunks
+- **`embedding_model`**: OpenAI embedding model to use
+- **`embedding_batch_size`**: Number of texts to embed per batch
+- **`pinecone_api_key`**: Pinecone API key for cloud vector storage
+- **`chroma_persist_directory`**: Local Chroma database directory
 
 ### Text Processing
 - **`preserve_reading_order`**: Maintain reading order during text extraction
@@ -178,6 +190,7 @@ poetry run python src/ingestion/pdf2txt.py --config ./my-config.yaml
 ├── src/
 │   └── ingestion/
 │       ├── pdf2txt.py       # Main ingestion script
+│       ├── chunk_embed.py   # Document chunking and embedding pipeline
 │       ├── config_schema.py # Configuration validation
 │       ├── extractor_registry.py # Plugin management
 │       └── extractors/      # Document format extractors
@@ -185,9 +198,11 @@ poetry run python src/ingestion/pdf2txt.py --config ./my-config.yaml
 │   ├── papers/             # Input PDFs (default)
 │   ├── text/               # Extracted text output with mathematical markers
 │   ├── metadata/           # JSON metadata output
-│   └── math/               # Mathematical formula files (.math, .refs)
+│   ├── math/               # Mathematical formula files (.math, .refs)
+│   └── chroma_db/          # Local Chroma vector database (optional)
 ├── logs/                   # Processing logs
 ├── tests/                  # Unit tests
+├── examples/               # Usage examples and demonstrations
 └── docs/
     └── Claude.md           # Detailed technical documentation
 ```
@@ -243,6 +258,32 @@ Bidirectional lookup tables enabling:
 - Find mathematical expression from text position
 - Semantic group organization
 - Efficient cross-referencing for downstream processing
+
+### Vector Database Output
+When using the chunk embedding pipeline, additional outputs are created:
+
+**Local Chroma Database** (`./data/chroma_db/`):
+- Persistent vector storage with mathematical content preservation
+- Searchable embeddings with comprehensive metadata
+- Bidirectional references to source documents and mathematical expressions
+
+**Pinecone Cloud Index**:
+- Scalable cloud vector storage
+- Namespace organization for different document collections
+- Enterprise-grade search and retrieval capabilities
+
+**Usage Examples:**
+
+```bash
+# Process documents and create local vector database
+python src/ingestion/chunk_embed.py --local --verbose
+
+# Process with cloud Pinecone storage
+python src/ingestion/chunk_embed.py --vectorstore pinecone --namespace research_docs
+
+# Custom processing with configuration
+python src/ingestion/chunk_embed.py --input-dir ./custom/text --config ./custom-config.yaml --local
+```
 
 ## Development
 

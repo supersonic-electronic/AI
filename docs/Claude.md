@@ -13,6 +13,7 @@ The PDF ingestion system has evolved to include:
 - **Plugin-style architecture** for extensible document format support
 - **Large PDF streaming** support for memory-efficient processing
 - **Advanced mathematical formula extraction** with bidirectional linking and semantic grouping
+- **Document chunking and embedding** with mathematical content preservation and vector store integration
 
 ## Configuration
 
@@ -50,6 +51,21 @@ The system uses a YAML configuration file (`config.yaml`) to define default sett
 - **`math_detection_threshold`**: Minimum score for mathematical content detection (default: `3`)
 - **`math_ocr_fallback`**: Use OpenAI OCR for low-confidence formulas (default: `false`)
 - **`openai_api_key`**: API key for OpenAI OCR fallback (default: `""`)
+
+### Document Chunking and Embedding
+- **`chunk_size`**: Target size for text chunks in characters (default: `500`)
+- **`chunk_overlap`**: Overlap between adjacent chunks in characters (default: `50`)
+- **`embedding_model`**: OpenAI embedding model to use (default: `"text-embedding-3-small"`)
+- **`embedding_batch_size`**: Number of texts to embed per batch (default: `30`)
+- **`max_retries`**: Maximum retry attempts for embedding requests (default: `3`)
+- **`retry_delay`**: Base delay between retries in seconds (default: `1.0`)
+
+### Vector Store Configuration
+- **`pinecone_api_key`**: Pinecone API key for cloud vector storage (default: `""`)
+- **`pinecone_index_name`**: Pinecone index name (default: `"document-embeddings"`)
+- **`pinecone_environment`**: Pinecone environment (default: `"us-east-1-aws"`)
+- **`chroma_persist_directory`**: Local Chroma database directory (default: `"./data/chroma_db"`)
+- **`chroma_collection_name`**: Chroma collection name (default: `"document_embeddings"`)
 
 ### File Handling
 - **`encoding`**: Text file encoding (default: `"utf-8"`)
@@ -305,6 +321,190 @@ text_position = ref_map['math_p1_l7_5023']
 # Find math block from text position  
 text_to_math = document_metadata['reference_maps']['1']['text_to_math']
 math_id = text_to_math['541']
+```
+
+## Document Chunking and Embedding System
+
+The system includes a sophisticated document chunking and embedding pipeline that preserves mathematical content while creating searchable vector representations.
+
+### Mathematical Content-Aware Chunking
+
+**MathAwareTextSplitter Features:**
+- **Boundary preservation**: Respects mathematical expression boundaries during chunking
+- **Semantic metadata**: Extracts mathematical semantic groups and confidence scores
+- **Context preservation**: Maintains surrounding text context for mathematical expressions
+- **Bidirectional references**: Links chunks to mathematical expressions via unique IDs
+
+**Chunking Process:**
+1. **Text analysis**: Identifies mathematical markers (`MATHREF_`) and their boundaries
+2. **Smart splitting**: Uses LangChain's RecursiveCharacterTextSplitter with math-aware logic
+3. **Metadata extraction**: Captures mathematical IDs, semantic groups, and confidence scores
+4. **Context linking**: Associates each chunk with relevant document and mathematical metadata
+
+### Embedding Generation
+
+**OpenAI Integration:**
+- Uses `text-embedding-3-small` model (1536 dimensions) by default
+- Batch processing for efficiency (configurable batch size)
+- Exponential backoff retry logic for reliability
+- Character position tracking for precise document mapping
+
+**Mathematical Enhancement:**
+- Preserves LaTeX representations in chunk metadata
+- Maintains mathematical semantic grouping information
+- Links related mathematical expressions across chunks
+- Includes confidence scores for mathematical content quality
+
+### Vector Store Integration
+
+**Dual Backend Support:**
+
+**Pinecone (Cloud):**
+```python
+# Configuration for Pinecone
+config = {
+    'pinecone_api_key': 'your-api-key',
+    'pinecone_index_name': 'document-embeddings',
+    'pinecone_environment': 'us-east-1-aws'
+}
+
+# Usage
+embedder = DocumentChunkEmbedder(config)
+stats = embedder.process_all(vector_store_type='pinecone', namespace='research_docs')
+```
+
+**Chroma (Local):**
+```python
+# Configuration for Chroma
+config = {
+    'chroma_persist_directory': './data/chroma_db',
+    'chroma_collection_name': 'document_embeddings'
+}
+
+# Usage
+embedder = DocumentChunkEmbedder(config)
+stats = embedder.process_all(vector_store_type='chroma')
+```
+
+### CLI Interface
+
+**Basic Usage:**
+```bash
+# Process documents with local Chroma database
+python src/ingestion/chunk_embed.py --local --verbose
+
+# Process with Pinecone cloud service
+python src/ingestion/chunk_embed.py --vectorstore pinecone --namespace research_docs
+
+# Custom input directory
+python src/ingestion/chunk_embed.py --input-dir ./custom/text --local
+
+# With custom configuration
+python src/ingestion/chunk_embed.py --config custom_config.yaml --local
+```
+
+**Available Options:**
+- `--input-dir`: Directory containing text files to process
+- `--vectorstore`: Vector store type (`pinecone` or `chroma`)
+- `--namespace`: Namespace for vector operations (Pinecone only)
+- `--local`: Use local Chroma database (equivalent to `--vectorstore chroma`)
+- `--config`: Configuration file path
+- `--verbose`: Enable verbose logging
+
+### Chunk Metadata Structure
+
+Each chunk includes comprehensive metadata:
+
+```json
+{
+  "source_file": "research_paper",
+  "chunk_index": 5,
+  "chunk_start": 1250,
+  "chunk_end": 1750,
+  "page": 3,
+  "math_block_count": 2,
+  "math_block_ids": ["math_p3_l15_3057", "math_p3_l18_4992"],
+  "semantic_groups": {"equation": 1, "portfolio_theory": 1},
+  "confidence_scores": [0.85, 0.92],
+  "has_mathematical_content": true,
+  "document_metadata": {
+    "title": "Portfolio Optimization Theory",
+    "author": "Research Author",
+    "doi": "10.1234/example.paper"
+  },
+  "chunk_text": "The actual chunk text content..."
+}
+```
+
+### Integration with Mathematical Extraction
+
+**Seamless Pipeline:**
+1. **PDF Processing**: Documents processed through enhanced mathematical extraction
+2. **Text Enhancement**: Mathematical markers integrated into text files
+3. **Chunking**: Math-aware splitting preserves mathematical boundaries
+4. **Embedding**: Mathematical metadata preserved in vector representations
+5. **Storage**: Bidirectional references enable precise retrieval
+
+**Mathematical Content Preservation:**
+- Original LaTeX representations maintained
+- Semantic groupings preserved across chunks
+- Related expression cross-references maintained
+- Character-level positioning for precise location
+
+### Performance and Scalability
+
+**Efficient Processing:**
+- Batch embedding generation (configurable batch sizes)
+- Parallel processing support
+- Progress tracking with tqdm
+- Memory-efficient chunking for large documents
+
+**Error Handling:**
+- Comprehensive retry logic for API calls
+- Graceful handling of missing files
+- Detailed error reporting and logging
+- Resume capability for interrupted processing
+
+### Usage Examples
+
+**Programmatic Usage:**
+```python
+from src.ingestion.chunk_embed import DocumentChunkEmbedder
+import yaml
+
+# Load configuration
+with open('config.yaml', 'r') as f:
+    config = yaml.safe_load(f)
+
+# Add required API keys
+config['openai_api_key'] = 'your-openai-key'
+config['pinecone_api_key'] = 'your-pinecone-key'  # for Pinecone
+
+# Initialize embedder
+embedder = DocumentChunkEmbedder(config)
+
+# Process all documents
+stats = embedder.process_all(
+    vector_store_type='pinecone',
+    namespace='research_collection'
+)
+
+print(f"Processed {stats['processed']} documents")
+print(f"Generated {stats['total_vectors']} vectors")
+print(f"Semantic groups found: {stats.get('semantic_groups', {})}")
+```
+
+**Single Document Processing:**
+```python
+# Process a single document
+vectors = embedder.process_document('research_paper')
+
+# Each vector contains: (id, embedding, metadata)
+for vector_id, embedding, metadata in vectors:
+    print(f"Vector ID: {vector_id}")
+    print(f"Embedding dimension: {len(embedding)}")
+    print(f"Math blocks: {metadata['math_block_count']}")
+    print(f"Semantic groups: {metadata['semantic_groups']}")
 ```
 
 ## Global Logging Mechanism
