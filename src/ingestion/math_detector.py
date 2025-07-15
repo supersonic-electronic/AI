@@ -94,14 +94,14 @@ class MathDetector:
         self.mathpix_client = None
         if settings.mathpix_app_id and settings.mathpix_app_key:
             try:
-                import mathpix
-                self.mathpix_client = mathpix.Mathpix(
+                from mpxpy.mathpix_client import MathpixClient
+                self.mathpix_client = MathpixClient(
                     app_id=settings.mathpix_app_id,
                     app_key=settings.mathpix_app_key
                 )
-                self.logger.info("Mathpix client initialized successfully")
+                self.logger.info("Mathpix client initialized via mpxpy")
             except ImportError:
-                self.logger.warning("Mathpix package not available, OCR fallback disabled")
+                self.logger.warning("mpxpy package not available, OCR fallback disabled")
             except Exception as e:
                 self.logger.error(f"Failed to initialize Mathpix client: {e}")
         
@@ -471,20 +471,37 @@ class MathDetector:
             # Convert bytes to base64 for Mathpix API
             image_base64 = base64.b64encode(image_bytes).decode('utf-8')
             
-            # Call Mathpix API
-            response = self.mathpix_client.latex({
-                'src': f'data:image/png;base64,{image_base64}',
-                'formats': ['latex_simplified'],
-                'metadata': {
-                    'math_inline_delimiters': ['$', '$'],
-                    'math_display_delimiters': ['$$', '$$']
-                }
-            })
+            # Use mpxpy to process the image
+            import tempfile
+            import os
             
-            if response.get('latex_simplified'):
-                latex = response['latex_simplified'].strip()
-                self.logger.debug(f"Mathpix extracted LaTeX: {latex[:100]}")
-                return latex
+            # Create temporary image file for mpxpy
+            with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as tmp_file:
+                tmp_file.write(image_bytes)
+                tmp_file_path = tmp_file.name
+            
+            try:
+                # Use mpxpy to process the image
+                image_result = self.mathpix_client.image_new(
+                    file_path=tmp_file_path,
+                    improve_mathpix=True
+                )
+                
+                # Get the LaTeX result from the image processing
+                if image_result and hasattr(image_result, 'latex_simplified'):
+                    latex = image_result.latex_simplified.strip()
+                    self.logger.debug(f"Mathpix extracted LaTeX: {latex[:100]}")
+                    return latex
+                elif image_result and hasattr(image_result, 'text'):
+                    # Fallback to regular text if LaTeX not available
+                    latex = image_result.text.strip()
+                    self.logger.debug(f"Mathpix OCR fallback text: {latex[:100]}")
+                    return latex
+                    
+            finally:
+                # Clean up temporary file
+                if os.path.exists(tmp_file_path):
+                    os.unlink(tmp_file_path)
             
         except Exception as e:
             self.logger.warning(f"Mathpix OCR failed: {e}")

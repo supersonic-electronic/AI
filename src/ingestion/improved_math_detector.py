@@ -112,16 +112,16 @@ class ImprovedMathDetector:
         # Initialize Mathpix client if configured
         if self.settings.mathpix_app_id and self.settings.mathpix_app_key:
             try:
-                import mathpix
-                self.mathpix_client = mathpix.Mathpix(
+                from mpxpy.mathpix_client import MathpixClient
+                self.mathpix_client = MathpixClient(
                     app_id=self.settings.mathpix_app_id,
                     app_key=self.settings.mathpix_app_key
                 )
-                self.logger.info("Mathpix client initialized")
+                self.logger.info("Mathpix client initialized via mpxpy")
             except ImportError:
-                self.logger.warning("Mathpix package not available")
+                self.logger.warning("mpxpy package not available")
             except Exception as e:
-                self.logger.error(f"Failed to initialize Mathpix: {e}")
+                self.logger.error(f"Failed to initialize Mathpix client: {e}")
         
         # Initialize OpenAI client if configured
         if self.settings.openai_api_key:
@@ -275,21 +275,36 @@ class ImprovedMathDetector:
         if self.mathpix_client:
             try:
                 import base64
-                image_base64 = base64.b64encode(image_bytes).decode('utf-8')
+                import tempfile
+                import os
                 
-                response = self.mathpix_client.latex({
-                    'src': f'data:image/png;base64,{image_base64}',
-                    'formats': ['latex_simplified'],
-                    'metadata': {
-                        'math_inline_delimiters': ['$', '$'],
-                        'math_display_delimiters': ['$$', '$$']
-                    }
-                })
+                # Create temporary image file
+                with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as tmp_file:
+                    tmp_file.write(image_bytes)
+                    tmp_file_path = tmp_file.name
                 
-                if response.get('latex_simplified'):
-                    latex = response['latex_simplified'].strip()
-                    self.logger.debug(f"Mathpix OCR result: {latex[:100]}")
-                    return latex
+                try:
+                    # Use mpxpy to process the image
+                    image_result = self.mathpix_client.image_new(
+                        file_path=tmp_file_path,
+                        improve_mathpix=True
+                    )
+                    
+                    # Get the LaTeX result from the image processing
+                    if image_result and hasattr(image_result, 'latex_simplified'):
+                        latex = image_result.latex_simplified.strip()
+                        self.logger.debug(f"Mathpix OCR result: {latex[:100]}")
+                        return latex
+                    elif image_result and hasattr(image_result, 'text'):
+                        # Fallback to regular text if LaTeX not available
+                        latex = image_result.text.strip()
+                        self.logger.debug(f"Mathpix OCR fallback text: {latex[:100]}")
+                        return latex
+                        
+                finally:
+                    # Clean up temporary file
+                    if os.path.exists(tmp_file_path):
+                        os.unlink(tmp_file_path)
                     
             except Exception as e:
                 self.logger.warning(f"Mathpix OCR failed: {e}")
