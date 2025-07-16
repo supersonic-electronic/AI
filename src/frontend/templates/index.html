@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Knowledge Graph Visualizer</title>
+    <link rel="stylesheet" href="/static/css/main.css">
+    <!-- Cytoscape.js -->
+    <script src="https://unpkg.com/cytoscape@3.26.0/dist/cytoscape.min.js"></script>
+    <!-- Cytoscape.js extensions -->
+    <script src="https://unpkg.com/cytoscape-cose-bilkent@4.1.0/cytoscape-cose-bilkent.js"></script>
+</head>
+<body>
+    <div id="app">
+        <!-- Header -->
+        <header class="header">
+            <h1>Knowledge Graph Visualizer</h1>
+            <div class="header-controls">
+                <div class="search-container">
+                    <input type="text" id="search-input" placeholder="Search concepts..." autocomplete="off">
+                    <div id="search-suggestions" class="search-suggestions"></div>
+                </div>
+                <div class="controls">
+                    <button id="refresh-btn" class="btn btn-primary" title="Refresh graph data">
+                        <span>⟳</span> Refresh
+                    </button>
+                    <button id="fit-btn" class="btn btn-secondary" title="Fit graph to view">
+                        <span>⊞</span> Fit View
+                    </button>
+                    <div class="dropdown">
+                        <button id="layout-btn" class="btn btn-secondary dropdown-toggle" title="Change graph layout">
+                            <span>⚏</span> Layout
+                        </button>
+                        <div id="layout-menu" class="dropdown-menu">
+                            <!-- Layout options will be populated by JavaScript -->
+                        </div>
+                    </div>
+                    <div class="dropdown">
+                        <button id="export-btn" class="btn btn-secondary dropdown-toggle" title="Export graph">
+                            <span>⤓</span> Export
+                        </button>
+                        <div id="export-menu" class="dropdown-menu">
+                            <button id="export-png" class="dropdown-item">PNG Image</button>
+                            <button id="export-svg" class="dropdown-item">SVG Vector</button>
+                            <button id="export-data" class="dropdown-item">JSON Data</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main content -->
+        <main class="main-content">
+            <!-- Left sidebar -->
+            <aside class="sidebar">
+                <div class="sidebar-section">
+                    <h3>Graph Statistics</h3>
+                    <div id="graph-stats" class="stats-container">
+                        <div class="stat-item">
+                            <span class="stat-label">Concepts:</span>
+                            <span class="stat-value" id="concepts-count">-</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Relationships:</span>
+                            <span class="stat-value" id="relationships-count">-</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="sidebar-section">
+                    <h3>Filters</h3>
+                    <div class="filter-container">
+                        <label for="concept-type-filter">Concept Type:</label>
+                        <select id="concept-type-filter">
+                            <option value="">All Types</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="sidebar-section">
+                    <h3>Legend</h3>
+                    <div id="legend" class="legend-container">
+                        <!-- Legend items will be populated dynamically -->
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Graph visualization -->
+            <div class="graph-container">
+                <div id="graph" class="graph-canvas"></div>
+                <div id="loading" class="loading-overlay">
+                    <div class="loading-spinner"></div>
+                    <div class="loading-text">Loading knowledge graph...</div>
+                </div>
+            </div>
+
+            <!-- Right panel for concept details -->
+            <aside class="details-panel" id="details-panel">
+                <div class="panel-header">
+                    <h3>Concept Details</h3>
+                    <button id="close-details" class="btn btn-icon">&times;</button>
+                </div>
+                <div class="panel-content" id="concept-details">
+                    <p class="placeholder-text">Select a concept to view details</p>
+                </div>
+            </aside>
+        </main>
+
+        <!-- Status bar -->
+        <footer class="status-bar">
+            <div class="status-item">
+                <span id="status-text">Ready</span>
+            </div>
+            <div class="status-item">
+                <span id="performance-info"></span>
+            </div>
+            <div class="status-item">
+                <button id="help-btn" class="btn btn-icon" title="Show keyboard shortcuts">
+                    <span>?</span>
+                </button>
+            </div>
+        </footer>
+
+        <!-- Help Modal -->
+        <div id="help-modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Keyboard Shortcuts & Help</h3>
+                    <button id="close-help" class="btn btn-icon">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="help-section">
+                        <h4>Navigation</h4>
+                        <div class="shortcut-list">
+                            <div class="shortcut-item">
+                                <kbd>F</kbd>
+                                <span>Fit graph to view</span>
+                            </div>
+                            <div class="shortcut-item">
+                                <kbd>R</kbd>
+                                <span>Refresh graph data</span>
+                            </div>
+                            <div class="shortcut-item">
+                                <kbd>Ctrl</kbd> + <kbd>F</kbd>
+                                <span>Focus search box</span>
+                            </div>
+                            <div class="shortcut-item">
+                                <kbd>Esc</kbd>
+                                <span>Deselect nodes / Close panels</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="help-section">
+                        <h4>Graph Interaction</h4>
+                        <div class="interaction-list">
+                            <div class="interaction-item">
+                                <strong>Click:</strong> Select node/edge
+                            </div>
+                            <div class="interaction-item">
+                                <strong>Double-click:</strong> Focus on node
+                            </div>
+                            <div class="interaction-item">
+                                <strong>Hover:</strong> Highlight connections
+                            </div>
+                            <div class="interaction-item">
+                                <strong>Drag:</strong> Pan the graph
+                            </div>
+                            <div class="interaction-item">
+                                <strong>Scroll:</strong> Zoom in/out
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="help-section">
+                        <h4>Features</h4>
+                        <div class="feature-list">
+                            <div class="feature-item">
+                                <strong>Search:</strong> Real-time concept search with suggestions
+                            </div>
+                            <div class="feature-item">
+                                <strong>Filtering:</strong> Filter by concept type using dropdown
+                            </div>
+                            <div class="feature-item">
+                                <strong>Legend:</strong> Click legend items to filter by type
+                            </div>
+                            <div class="feature-item">
+                                <strong>Export:</strong> Download graph as PNG, SVG, or JSON
+                            </div>
+                            <div class="feature-item">
+                                <strong>Layouts:</strong> Change graph layout algorithm
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="modal-overlay" class="modal-overlay"></div>
+    </div>
+
+    <!-- Include JavaScript -->
+    <script src="/static/js/performance.js"></script>
+    <script src="/static/js/graph.js"></script>
+    <script src="/static/js/main.js"></script>
+</body>
+</html>

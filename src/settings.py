@@ -10,7 +10,8 @@ from pathlib import Path
 from typing import Dict, List, Optional, Union
 
 import yaml
-from pydantic import BaseSettings, Field, validator, root_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
@@ -114,6 +115,14 @@ class Settings(BaseSettings):
     )
     enable_plugins: bool = Field(default=True, description="Enable plugin system")
     
+    # Web Server Configuration
+    web_host: str = Field(default="localhost", description="Host to bind web server to")
+    web_port: int = Field(default=8000, description="Port to bind web server to")
+    web_debug: bool = Field(default=False, description="Enable debug mode for web server")
+    web_cache_ttl: int = Field(default=3600, description="Cache TTL in seconds for web API responses")
+    web_static_dir: Path = Field(default=Path("./src/frontend/static"), description="Static files directory for web frontend")
+    web_templates_dir: Path = Field(default=Path("./src/frontend/templates"), description="Templates directory for web frontend")
+    
     class Config:
         """Pydantic configuration."""
         env_file = ".env"
@@ -132,7 +141,8 @@ class Settings(BaseSettings):
         # Allow arbitrary types for complex validation
         arbitrary_types_allowed = True
     
-    @validator("log_level")
+    @field_validator("log_level")
+    @classmethod
     def validate_log_level(cls, v: str) -> str:
         """Validate log level is one of the standard logging levels."""
         valid_levels = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
@@ -140,7 +150,8 @@ class Settings(BaseSettings):
             raise ValueError(f"log_level must be one of: {valid_levels}")
         return v.upper()
     
-    @validator("parallel_workers")
+    @field_validator("parallel_workers")
+    @classmethod
     def validate_parallel_workers(cls, v: int) -> int:
         """Validate parallel workers count is reasonable."""
         if v < 1:
@@ -149,7 +160,8 @@ class Settings(BaseSettings):
             raise ValueError("parallel_workers should not exceed 32")
         return v
     
-    @validator("chunk_size")
+    @field_validator("chunk_size")
+    @classmethod
     def validate_chunk_size(cls, v: int) -> int:
         """Validate chunk size is reasonable."""
         if v < 50:
@@ -158,26 +170,24 @@ class Settings(BaseSettings):
             raise ValueError("chunk_size should not exceed 10000 characters")
         return v
     
-    @validator("chunk_overlap")
-    def validate_chunk_overlap(cls, v: int, values: Dict) -> int:
-        """Validate chunk overlap is reasonable relative to chunk size."""
+    @field_validator("chunk_overlap")
+    @classmethod
+    def validate_chunk_overlap(cls, v: int) -> int:
+        """Validate chunk overlap is reasonable."""
         if v < 0:
             raise ValueError("chunk_overlap must be non-negative")
-        
-        chunk_size = values.get("chunk_size", 500)
-        if v >= chunk_size:
-            raise ValueError("chunk_overlap must be less than chunk_size")
-        
         return v
     
-    @validator("*", pre=True)
-    def convert_paths(cls, v: Union[str, Path], field) -> Union[str, Path, int, bool, float, List]:
+    @field_validator("*", mode="before")
+    @classmethod
+    def convert_paths(cls, v: Union[str, Path], info) -> Union[str, Path, int, bool, float, List]:
         """Convert string paths to Path objects for path fields."""
-        if field.name.endswith(("_dir", "_file", "persist_directory")) and isinstance(v, str):
+        if info.field_name and info.field_name.endswith(("_dir", "_file", "persist_directory")) and isinstance(v, str):
             return Path(v)
         return v
     
-    @validator("concurrent_requests")
+    @field_validator("concurrent_requests")
+    @classmethod
     def validate_concurrent_requests(cls, v: int) -> int:
         """Validate concurrent requests is reasonable."""
         if v < 1:
@@ -186,16 +196,34 @@ class Settings(BaseSettings):
             raise ValueError("concurrent_requests should not exceed 20")
         return v
     
-    @root_validator
-    def validate_mathpix_config(cls, values: Dict) -> Dict:
+    @field_validator("web_port")
+    @classmethod
+    def validate_web_port(cls, v: int) -> int:
+        """Validate web port is in valid range."""
+        if v < 1024 or v > 65535:
+            raise ValueError("web_port must be between 1024 and 65535")
+        return v
+    
+    @field_validator("web_cache_ttl")
+    @classmethod
+    def validate_web_cache_ttl(cls, v: int) -> int:
+        """Validate web cache TTL is reasonable."""
+        if v < 0:
+            raise ValueError("web_cache_ttl must be non-negative")
+        if v > 86400:  # 24 hours
+            raise ValueError("web_cache_ttl should not exceed 86400 seconds (24 hours)")
+        return v
+    
+    @model_validator(mode='after')
+    def validate_mathpix_config(self) -> 'Settings':
         """Validate Mathpix configuration consistency."""
-        if values.get("math_ocr_fallback", False):
-            if not values.get("mathpix_app_id") or not values.get("mathpix_app_key"):
-                if not values.get("openai_api_key"):
+        if self.math_ocr_fallback:
+            if not self.mathpix_app_id or not self.mathpix_app_key:
+                if not self.openai_api_key:
                     raise ValueError(
                         "math_ocr_fallback requires either Mathpix credentials or OpenAI API key"
                     )
-        return values
+        return self
     
     @classmethod
     def load_from_yaml(cls, yaml_file: Union[str, Path] = "config.yaml") -> "Settings":
@@ -293,6 +321,8 @@ class Settings(BaseSettings):
             self.math_dir,
             self.log_file.parent,
             self.chroma_persist_directory,
+            self.web_static_dir,
+            self.web_templates_dir,
         ]
         
         for directory in directories:

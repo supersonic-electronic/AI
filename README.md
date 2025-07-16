@@ -1,6 +1,35 @@
-# AI-Powered Portfolio Optimization
+# AI Knowledge Graph System
 
-An AI-driven portfolio optimization system that ingests research documents, processes them with advanced text extraction, and uses them for generating high-quality methodology and code. The end goal is a web-based application allowing user input and intelligent portfolio optimization recommendations.
+A comprehensive system for extracting, processing, and visualizing knowledge from academic documents using advanced AI techniques. Features an interactive web-based visualization with Phase 3 enhancements including performance monitoring, export capabilities, and advanced user interactions.
+
+## 🚀 Quick Start
+
+```bash
+# Install dependencies
+poetry install
+
+# Test the complete workflow  
+poetry run python main.py test
+
+# Launch the interactive web application
+poetry run python main.py server
+# Visit: http://localhost:8000
+```
+
+## ✨ Key Features
+
+### 📊 Interactive Web Visualization
+- **Real-time Knowledge Graph** - Interactive visualization with Cytoscape.js
+- **Dynamic Search** - Real-time concept search with intelligent suggestions
+- **Multiple Layouts** - 6 layout algorithms (force-directed, circular, grid, hierarchical, concentric, directed)
+- **Export Options** - PNG, SVG, and JSON export with high-resolution support
+
+### 🎨 Phase 3 Enhancements (Production Ready)
+- **Performance Monitoring** - Real-time metrics, memory usage tracking, API performance
+- **Advanced UI/UX** - Material Design, responsive layout, dark mode support
+- **Accessibility** - Full ARIA compliance, keyboard navigation, high contrast support
+- **Help System** - Interactive help modal with comprehensive keyboard shortcuts
+- **Error Handling** - Robust error boundaries with user-friendly recovery options
 
 ## Features
 

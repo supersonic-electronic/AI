@@ -7,7 +7,7 @@ relationships, and semantic mappings.
 """
 
 from enum import Enum
-from typing import Dict, List, Optional, Set, Tuple, Union
+from typing import Any, Dict, List, Optional, Set, Tuple, Union
 from dataclasses import dataclass, field
 import logging
 
@@ -453,4 +453,105 @@ class FinancialMathOntology:
                 }
                 for rel in self.relationships
             ]
+        }
+    
+    def export_for_cytoscape(self) -> Dict[str, List[Dict]]:
+        """
+        Export ontology in Cytoscape.js format for web visualization.
+        
+        Returns:
+            Dictionary with 'nodes' and 'edges' lists in Cytoscape.js format
+        """
+        # Convert concepts to nodes
+        nodes = []
+        for concept in self.concepts.values():
+            node = {
+                "data": {
+                    "id": concept.id,
+                    "name": concept.name,
+                    "type": concept.concept_type.value,
+                    "description": concept.description or "",
+                    "notation": concept.notation or "",
+                    "latex": concept.latex or "",
+                    "aliases": list(concept.aliases),
+                    "properties": concept.properties,
+                    "source_document": concept.source_document or "",
+                    "source_page": concept.source_page,
+                    "confidence": concept.confidence
+                }
+            }
+            nodes.append(node)
+        
+        # Convert relationships to edges
+        edges = []
+        for i, relationship in enumerate(self.relationships):
+            edge = {
+                "data": {
+                    "id": f"edge_{i}",
+                    "source": relationship.source_concept_id,
+                    "target": relationship.target_concept_id,
+                    "type": relationship.relationship_type.value,
+                    "confidence": relationship.confidence,
+                    "properties": relationship.properties,
+                    "source_document": relationship.source_document or "",
+                    "source_page": relationship.source_page,
+                    "context": relationship.context or ""
+                }
+            }
+            edges.append(edge)
+        
+        return {
+            "nodes": nodes,
+            "edges": edges
+        }
+    
+    def get_enhanced_color_scheme(self) -> Dict[str, str]:
+        """
+        Get an enhanced color scheme for web visualization.
+        
+        Returns professional colors optimized for web display based on
+        the existing color scheme but with improved accessibility and aesthetics.
+        
+        Returns:
+            Dictionary mapping concept types to hex colors
+        """
+        return {
+            # Mathematical concepts - Blue family
+            ConceptType.EQUATION.value: "#2196F3",      # Material Blue
+            ConceptType.FORMULA.value: "#1976D2",       # Material Blue 700
+            ConceptType.VARIABLE.value: "#42A5F5",      # Material Blue 400
+            ConceptType.CONSTANT.value: "#64B5F6",      # Material Blue 300
+            ConceptType.FUNCTION.value: "#90CAF9",      # Material Blue 200
+            ConceptType.MATRIX.value: "#BBDEFB",        # Material Blue 100
+            ConceptType.VECTOR.value: "#E3F2FD",        # Material Blue 50
+            ConceptType.OPERATOR.value: "#1565C0",      # Material Blue 800
+            ConceptType.THEOREM.value: "#0D47A1",       # Material Blue 900
+            ConceptType.PROOF.value: "#0277BD",         # Light Blue 800
+            
+            # Financial concepts - Green/Orange family
+            ConceptType.PORTFOLIO.value: "#FF8A50",     # Warm orange
+            ConceptType.ASSET.value: "#4CAF50",         # Material Green
+            ConceptType.RISK.value: "#E91E63",          # Material Pink
+            ConceptType.RETURN.value: "#2E7D32",        # Material Green 800
+            ConceptType.OPTIMIZATION.value: "#9C27B0",  # Material Purple
+            ConceptType.MODEL.value: "#FF5722",         # Material Deep Orange
+            ConceptType.STRATEGY.value: "#795548",      # Material Brown
+            ConceptType.PERFORMANCE.value: "#607D8B",   # Material Blue Grey
+            ConceptType.METRIC.value: "#00BCD4",        # Material Cyan
+            ConceptType.CONSTRAINT.value: "#FFC107",    # Material Amber
+            
+            # General concepts - Grey/Purple family
+            ConceptType.AUTHOR.value: "#9E9E9E",        # Material Grey
+            ConceptType.PAPER.value: "#757575",         # Material Grey 600
+            ConceptType.METHODOLOGY.value: "#673AB7",   # Material Deep Purple
+            ConceptType.ALGORITHM.value: "#3F51B5",     # Material Indigo
+            ConceptType.PARAMETER.value: "#009688",     # Material Teal
+            ConceptType.ASSUMPTION.value: "#8BC34A",    # Material Light Green
+            ConceptType.CONCLUSION.value: "#CDDC39",    # Material Lime
+            
+            # Semantic concepts - Warm family
+            ConceptType.DEFINITION.value: "#FF9800",    # Material Orange
+            ConceptType.EXAMPLE.value: "#FF5722",       # Material Deep Orange
+            ConceptType.APPLICATION.value: "#795548",   # Material Brown
+            ConceptType.LIMITATION.value: "#F44336",    # Material Red
         }

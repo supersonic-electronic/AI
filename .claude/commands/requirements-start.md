@@ -60,7 +60,7 @@ Begin gathering requirements for: $ARGUMENTS
    - Implementation hints and patterns to follow
    - Acceptance criteria
    - Assumptions for any unanswered questions
-   - Test plan (unit tests & integration tests)
+   - Test plan (unit tests & integration tests, determine if entire workflow needs to be tested)
    - Plan for updating documentation (including all relevant .md files)
    - Git & Github commit instructions
    

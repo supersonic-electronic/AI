@@ -50,7 +50,7 @@ def create_parser() -> argparse.ArgumentParser:
     subparsers = parser.add_subparsers(
         dest="command",
         help="Available commands",
-        metavar="{ingest,chunk,embed,test,graph,watch,batch}"
+        metavar="{ingest,chunk,embed,test,graph,watch,batch,serve}"
     )
     
     # Ingest subcommand
@@ -108,6 +108,14 @@ def create_parser() -> argparse.ArgumentParser:
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
     add_batch_arguments(batch_parser)
+    
+    # Serve subcommand
+    serve_parser = subparsers.add_parser(
+        "serve",
+        help="Launch the web visualization server",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
+    add_serve_arguments(serve_parser)
     
     return parser
 
@@ -526,6 +534,33 @@ def add_batch_arguments(parser: argparse.ArgumentParser) -> None:
     )
 
 
+def add_serve_arguments(parser: argparse.ArgumentParser) -> None:
+    """Add arguments for the serve subcommand."""
+    parser.add_argument(
+        "--host",
+        type=str,
+        help="Host to bind web server to"
+    )
+    
+    parser.add_argument(
+        "--port",
+        type=int,
+        help="Port to bind web server to"
+    )
+    
+    parser.add_argument(
+        "--debug",
+        action="store_true",
+        help="Enable debug mode for web server"
+    )
+    
+    parser.add_argument(
+        "--reload",
+        action="store_true",
+        help="Enable auto-reload for development"
+    )
+
+
 def run_ingest(args: argparse.Namespace, settings: Settings) -> int:
     """Run the ingest command."""
     try:
@@ -594,7 +629,7 @@ def run_ingest(args: argparse.Namespace, settings: Settings) -> int:
 def run_chunk(args: argparse.Namespace, settings: Settings) -> int:
     """Run the chunk command."""
     try:
-        from src.ingestion.chunk_embed import DocumentChunker
+        from src.ingestion.chunk_embed import DocumentChunkEmbedder
         
         # Update settings with command line arguments
         if args.input_dir:
@@ -605,7 +640,7 @@ def run_chunk(args: argparse.Namespace, settings: Settings) -> int:
             settings.chunk_overlap = args.chunk_overlap
         
         # Create and run chunker
-        chunker = DocumentChunker(settings)
+        chunker = DocumentChunkEmbedder(settings.model_dump())
         output_dir = args.output_dir or Path("./data/chunks")
         chunker.process_directory(settings.text_dir, output_dir)
         
@@ -1147,6 +1182,46 @@ def run_batch(args: argparse.Namespace, settings: Settings) -> int:
         return 1
 
 
+def run_serve(args: argparse.Namespace, settings: Settings) -> int:
+    """Run the serve command."""
+    try:
+        # Update settings with command line arguments
+        if args.host:
+            settings.web_host = args.host
+        if args.port:
+            settings.web_port = args.port
+        if args.debug:
+            settings.web_debug = args.debug
+        
+        # Import FastAPI app
+        from src.frontend.app import create_app
+        
+        # Create the FastAPI application
+        app = create_app(settings)
+        
+        # Run with uvicorn
+        import uvicorn
+        
+        print(f"Starting web server on {settings.web_host}:{settings.web_port}")
+        print(f"Debug mode: {settings.web_debug}")
+        print(f"Open your browser to: http://{settings.web_host}:{settings.web_port}")
+        
+        uvicorn.run(
+            app,
+            host=settings.web_host,
+            port=settings.web_port,
+            debug=settings.web_debug,
+            reload=args.reload if hasattr(args, 'reload') else False,
+            log_level="debug" if settings.web_debug else "info"
+        )
+        
+        return 0
+        
+    except Exception as e:
+        logging.error(f"Web server failed: {e}")
+        return 1
+
+
 def main() -> int:
     """Main CLI entry point."""
     parser = create_parser()
@@ -1188,6 +1263,8 @@ def main() -> int:
             return run_watch(args, settings)
         elif args.command == "batch":
             return run_batch(args, settings)
+        elif args.command == "serve":
+            return run_serve(args, settings)
         else:
             logging.error(f"Unknown command: {args.command}")
             return 1
