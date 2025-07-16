@@ -82,6 +82,21 @@ class GraphManager {
             throw new Error(`Container with id '${this.containerId}' not found`);
         }
 
+        // Register Cytoscape.js extensions
+        if (typeof coseBilkent !== 'undefined') {
+            cytoscape.use(coseBilkent);
+            console.log('Registered cose-bilkent layout');
+        } else {
+            console.warn('cose-bilkent extension not available, will use fallback layouts');
+        }
+        
+        if (typeof cytoscape.dagre !== 'undefined') {
+            cytoscape.use(cytoscape.dagre);
+            console.log('Registered dagre layout');
+        } else {
+            console.warn('dagre extension not available');
+        }
+
         // Cytoscape.js configuration
         this.cy = cytoscape({
             container: container,
@@ -89,22 +104,8 @@ class GraphManager {
             // Styling
             style: this.getGraphStyles(),
             
-            // Layout
-            layout: {
-                name: 'cose-bilkent',
-                animate: true,
-                animationDuration: 1000,
-                randomize: true,
-                nodeRepulsion: 4500,
-                idealEdgeLength: 50,
-                edgeElasticity: 0.45,
-                nestingFactor: 0.1,
-                gravity: 0.25,
-                numIter: 2500,
-                tile: true,
-                tilingPaddingVertical: 10,
-                tilingPaddingHorizontal: 10
-            },
+            // Layout - use fallback if cose-bilkent not available
+            layout: this.getDefaultLayout(),
             
             // Interaction options
             minZoom: 0.2,
@@ -120,6 +121,48 @@ class GraphManager {
         
         console.log('Graph manager initialized successfully');
         return this.cy;
+    }
+
+    /**
+     * Get default layout configuration with fallback
+     */
+    getDefaultLayout() {
+        // Check if cose-bilkent is available
+        if (typeof coseBilkent !== 'undefined') {
+            return {
+                name: 'cose-bilkent',
+                animate: true,
+                animationDuration: 1000,
+                randomize: true,
+                nodeRepulsion: 4500,
+                idealEdgeLength: 50,
+                edgeElasticity: 0.45,
+                nestingFactor: 0.1,
+                gravity: 0.25,
+                numIter: 2500,
+                tile: true,
+                tilingPaddingVertical: 10,
+                tilingPaddingHorizontal: 10
+            };
+        } else {
+            // Fallback to built-in cose layout
+            console.warn('Using fallback cose layout instead of cose-bilkent');
+            return {
+                name: 'cose',
+                animate: true,
+                animationDuration: 1000,
+                randomize: true,
+                nodeRepulsion: 400000,
+                idealEdgeLength: 100,
+                edgeElasticity: 100,
+                nestingFactor: 5,
+                gravity: 80,
+                numIter: 1000,
+                initialTemp: 200,
+                coolingFactor: 0.95,
+                minTemp: 1.0
+            };
+        }
     }
 
     /**
@@ -316,22 +359,10 @@ class GraphManager {
             this.cy.add(this.graphData.nodes);
             this.cy.add(this.graphData.edges);
             
-            // Run layout
-            const layout = this.cy.layout({
-                name: 'cose-bilkent',
-                animate: true,
-                animationDuration: 1500,
-                randomize: true,
-                nodeRepulsion: 4500,
-                idealEdgeLength: 60,
-                edgeElasticity: 0.45,
-                nestingFactor: 0.1,
-                gravity: 0.25,
-                numIter: 2500,
-                tile: true,
-                tilingPaddingVertical: 15,
-                tilingPaddingHorizontal: 15
-            });
+            // Run layout using default configuration
+            const layoutConfig = this.getDefaultLayout();
+            layoutConfig.animationDuration = 1500; // Longer for initial load
+            const layout = this.cy.layout(layoutConfig);
             
             layout.run();
             
@@ -542,7 +573,7 @@ class GraphManager {
      */
     changeLayout(layoutName, options = {}) {
         const layoutConfigs = {
-            'cose-bilkent': {
+            'cose-bilkent': typeof coseBilkent !== 'undefined' ? {
                 name: 'cose-bilkent',
                 animate: true,
                 animationDuration: 1000,
@@ -555,6 +586,20 @@ class GraphManager {
                 tile: true,
                 tilingPaddingVertical: 10,
                 tilingPaddingHorizontal: 10,
+                ...options
+            } : {
+                name: 'cose',
+                animate: true,
+                animationDuration: 1000,
+                nodeRepulsion: 400000,
+                idealEdgeLength: 100,
+                edgeElasticity: 100,
+                nestingFactor: 5,
+                gravity: 80,
+                numIter: 1000,
+                initialTemp: 200,
+                coolingFactor: 0.95,
+                minTemp: 1.0,
                 ...options
             },
             'circle': {
@@ -618,14 +663,25 @@ class GraphManager {
      * Get available layouts
      */
     getAvailableLayouts() {
-        return [
-            { name: 'cose-bilkent', label: 'Force-Directed (Default)', description: 'Physics-based layout with good separation' },
+        const layouts = [
             { name: 'circle', label: 'Circle', description: 'Arrange nodes in a circle' },
             { name: 'grid', label: 'Grid', description: 'Arrange nodes in a grid pattern' },
             { name: 'breadthfirst', label: 'Hierarchical', description: 'Tree-like hierarchical layout' },
             { name: 'concentric', label: 'Concentric', description: 'Concentric circles by importance' },
-            { name: 'dagre', label: 'Directed Graph', description: 'Directed acyclic graph layout' }
+            { name: 'cose', label: 'Force-Directed (Built-in)', description: 'Built-in physics-based layout' }
         ];
+        
+        // Add cose-bilkent if available
+        if (typeof coseBilkent !== 'undefined') {
+            layouts.unshift({ name: 'cose-bilkent', label: 'Force-Directed (Enhanced)', description: 'Enhanced physics-based layout with better separation' });
+        }
+        
+        // Add dagre if available  
+        if (typeof cytoscape.dagre !== 'undefined') {
+            layouts.push({ name: 'dagre', label: 'Directed Graph', description: 'Directed acyclic graph layout' });
+        }
+        
+        return layouts;
     }
 
     /**
