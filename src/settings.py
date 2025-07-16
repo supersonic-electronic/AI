@@ -10,8 +10,7 @@ from pathlib import Path
 from typing import Dict, List, Optional, Union
 
 import yaml
-from pydantic import Field, field_validator, model_validator
-from pydantic_settings import BaseSettings
+from pydantic import BaseSettings, Field, validator, root_validator
 
 
 class Settings(BaseSettings):
@@ -133,17 +132,15 @@ class Settings(BaseSettings):
         # Allow arbitrary types for complex validation
         arbitrary_types_allowed = True
     
-    @field_validator("log_level")
-    @classmethod
+    @validator("log_level")
     def validate_log_level(cls, v: str) -> str:
         """Validate log level is one of the standard logging levels."""
         valid_levels = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
         if v.upper() not in valid_levels:
             raise ValueError(f"log_level must be one of: {valid_levels}")
         return v.upper()
-
-    @field_validator("parallel_workers")
-    @classmethod
+    
+    @validator("parallel_workers")
     def validate_parallel_workers(cls, v: int) -> int:
         """Validate parallel workers count is reasonable."""
         if v < 1:
@@ -151,9 +148,8 @@ class Settings(BaseSettings):
         if v > 32:
             raise ValueError("parallel_workers should not exceed 32")
         return v
-
-    @field_validator("chunk_size")
-    @classmethod
+    
+    @validator("chunk_size")
     def validate_chunk_size(cls, v: int) -> int:
         """Validate chunk size is reasonable."""
         if v < 50:
@@ -162,19 +158,26 @@ class Settings(BaseSettings):
             raise ValueError("chunk_size should not exceed 10000 characters")
         return v
     
-    @model_validator(mode='after')
-    def validate_chunk_overlap(self) -> 'Settings':
+    @validator("chunk_overlap")
+    def validate_chunk_overlap(cls, v: int, values: Dict) -> int:
         """Validate chunk overlap is reasonable relative to chunk size."""
-        if self.chunk_overlap < 0:
+        if v < 0:
             raise ValueError("chunk_overlap must be non-negative")
-
-        if self.chunk_overlap >= self.chunk_size:
+        
+        chunk_size = values.get("chunk_size", 500)
+        if v >= chunk_size:
             raise ValueError("chunk_overlap must be less than chunk_size")
-
-        return self
+        
+        return v
     
-    @field_validator("concurrent_requests")
-    @classmethod
+    @validator("*", pre=True)
+    def convert_paths(cls, v: Union[str, Path], field) -> Union[str, Path, int, bool, float, List]:
+        """Convert string paths to Path objects for path fields."""
+        if field.name.endswith(("_dir", "_file", "persist_directory")) and isinstance(v, str):
+            return Path(v)
+        return v
+    
+    @validator("concurrent_requests")
     def validate_concurrent_requests(cls, v: int) -> int:
         """Validate concurrent requests is reasonable."""
         if v < 1:
@@ -183,16 +186,16 @@ class Settings(BaseSettings):
             raise ValueError("concurrent_requests should not exceed 20")
         return v
     
-    @model_validator(mode='after')
-    def validate_mathpix_config(self) -> 'Settings':
+    @root_validator
+    def validate_mathpix_config(cls, values: Dict) -> Dict:
         """Validate Mathpix configuration consistency."""
-        if self.math_ocr_fallback:
-            if not self.mathpix_app_id or not self.mathpix_app_key:
-                if not self.openai_api_key:
+        if values.get("math_ocr_fallback", False):
+            if not values.get("mathpix_app_id") or not values.get("mathpix_app_key"):
+                if not values.get("openai_api_key"):
                     raise ValueError(
                         "math_ocr_fallback requires either Mathpix credentials or OpenAI API key"
                     )
-        return self
+        return values
     
     @classmethod
     def load_from_yaml(cls, yaml_file: Union[str, Path] = "config.yaml") -> "Settings":

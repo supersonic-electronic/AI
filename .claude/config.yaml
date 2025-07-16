@@ -1,0 +1,68 @@
+# Claude Code CLI Configuration for AI Portfolio Optimization Project
+
+# Project Information
+project:
+  name: "AI Portfolio Optimization"
+  description: "AI-powered portfolio optimization system with document processing and mathematical formula extraction"
+  version: "0.1.0"
+  
+# Context Files
+context_files:
+  - ".claude/project-context.md"
+  - ".claude/coding-guidelines.md"
+  - "docs/Claude.md"
+  - "docs/Mathematical_Detection_Improvements.md"
+  - "docs/OCR_Configuration.md"
+  - "README.md"
+  - "pyproject.toml"
+
+# Prompt Templates
+prompt_templates:
+  - ".claude/prompts/"
+
+# Code Templates
+code_templates:
+  - ".claude/templates/"
+
+# Ignore Patterns (files/directories to exclude from context)
+ignore_patterns:
+  - "__pycache__/"
+  - "*.pyc"
+  - ".git/"
+  - "node_modules/"
+  - "venv/"
+  - ".venv/"
+  - "data/"
+  - "logs/"
+  - ".pytest_cache/"
+  - "*.log"
+
+# Language-specific settings
+languages:
+  python:
+    style_guide: "PEP 8 with Black formatting (88 char line length)"
+    type_hints: "required"
+    docstring_style: "Google"
+    test_framework: "pytest"
+    
+# AI Assistant Preferences
+assistant:
+  code_style: "clean, readable, well-documented"
+  error_handling: "comprehensive with proper exception hierarchies"
+  testing: "comprehensive with unit, integration, and performance tests"
+  async_support: "prefer async/await for I/O operations"
+  logging: "structured logging with correlation IDs"
+  
+# Development Workflow
+workflow:
+  pre_commit_hooks: true
+  type_checking: true
+  code_formatting: true
+  test_coverage_threshold: 90
+  
+# External Integrations
+integrations:
+  openai: "for embeddings and OCR"
+  mathpix: "for mathematical formula OCR"
+  pinecone: "for cloud vector storage"
+  chroma: "for local vector storage"

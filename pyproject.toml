@@ -1,60 +1,51 @@
-[tool.poetry]
-name = "ai-portfolio-optimization"
+[project]
+name = "ai"
 version = "0.1.0"
-description = "AI-powered portfolio optimization system with document processing and mathematical formula extraction"
-authors = ["supersonic-electronic <jinkazama232@protonmail.com>"]
+description = ""
+authors = [
+    {name = "supersonic-electronic",email = "jinkazama232@protonmail.com"}
+]
 readme = "README.md"
-packages = [{include = "src"}]
+requires-python = ">=3.9, <4.0"
+package-mode = false
+dependencies = [
+    "black (>=25.1.0,<26.0.0)",
+    "fitz (>=0.0.1.dev2,<0.0.2)",
+    "pymupdf (>=1.26.3,<2.0.0)",
+    "pyyaml (>=6.0.2,<7.0.0)",
+    "tqdm (>=4.67.1,<5.0.0)",
+    "langchain (>=0.3.26,<0.4.0)",
+    "openai (>=1.95.1,<2.0.0)",
+    "pillow (>=11.3.0,<12.0.0)",
+    "jsonschema (>=4.24.0,<5.0.0)",
+    "pinecone-client (>=3.0.0,<4.0.0)",
+    "chromadb (>=0.4.0,<1.0.0)",
+    "langchain-text-splitters (>=0.3.0,<0.4.0)",
+    "pydantic (>=2.0.0,<3.0.0)",
+    "pytest (>=7.0.0,<8.0.0)",
+    "pytest-asyncio (>=0.21.0,<1.0.0)",
+    "pytest-mock (>=3.10.0,<4.0.0)",
+    "python-docx (>=1.1.0,<2.0.0)",
+    "beautifulsoup4 (>=4.12.0,<5.0.0)",
+    "lxml (>=5.0.0,<6.0.0)",
+    "watchdog (>=4.0.0,<5.0.0)",
+]
 
-[tool.poetry.dependencies]
-python = "^3.9"
-# Core dependencies
-pymupdf = "^1.26.3"
-pyyaml = "^6.0.2"
-tqdm = "^4.67.1"
-pydantic = "^2.0.0"
-jsonschema = "^4.24.0"
-pillow = "^11.3.0"
 
-# AI/ML dependencies
-openai = "^1.95.1"
-langchain = "^0.3.26"
-langchain-text-splitters = "^0.3.0"
-pydantic-settings = "^2.0.0"
-
-# Vector databases
-pinecone-client = "^3.0.0"
-chromadb = "^0.4.0"
-
-# Optional OCR dependency (install manually if needed)
-# mathpix = {version = "^3.0.0", optional = true}
-mpxpy = "^0.0.16"
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.group.dev.dependencies]
-# Code formatting and linting
 black = "^25.1.0"
 isort = "^6.0.1"
 flake8 = "^7.3.0"
-mypy = "^1.0.0"
 
-# Testing
-pytest = "^7.0.0"
-pytest-asyncio = "^0.21.0"
-pytest-mock = "^3.10.0"
-pytest-cov = "^4.0.0"
+[tool.poetry.dependencies]
+python = ">=3.9,<4.0"
 
-# Development tools
-pre-commit = "^3.0.0"
-
-[tool.poetry.extras]
-ocr = ["mathpix"]
-
-[build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
-
-[tool.poetry.plugins."portfolio_optimizer.extractors"]
-# Plugin entries for document extractors
+[project.entry-points."project.plugins"]
+# Example plugin entries - actual plugins would be added here
 # pdf_enhanced = "my_plugins.extractors:EnhancedPDFExtractor"
 
 [tool.isort]
@@ -111,33 +102,4 @@ exclude_lines = [
     "def __repr__",
     "raise AssertionError",
     "raise NotImplementedError",
-    "if __name__ == .__main__.:",
-    "if TYPE_CHECKING:",
 ]
-show_missing = true
-skip_covered = false
-
-[tool.mypy]
-python_version = "3.9"
-warn_return_any = true
-warn_unused_configs = true
-disallow_untyped_defs = true
-disallow_incomplete_defs = true
-check_untyped_defs = true
-disallow_untyped_decorators = true
-no_implicit_optional = true
-warn_redundant_casts = true
-warn_unused_ignores = true
-warn_no_return = true
-warn_unreachable = true
-strict_equality = true
-show_error_codes = true
-
-[[tool.mypy.overrides]]
-module = [
-    "fitz.*",
-    "mathpix.*",
-    "chromadb.*",
-    "pinecone.*",
-]
-ignore_missing_imports = true

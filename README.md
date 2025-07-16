@@ -4,17 +4,33 @@ An AI-driven portfolio optimization system that ingests research documents, proc
 
 ## Features
 
-- **PDF Document Ingestion**: Advanced PDF text and metadata extraction with parallel processing
-- **Improved Mathematical Formula Detection**: High-precision mathematical content detection with 97.5% false positive reduction
-- **Document Chunking and Embedding**: Advanced text chunking with mathematical content preservation and vector store integration
-- **YAML-based Configuration**: Centralized settings management with smart defaults
-- **Interactive CLI**: User-friendly command-line interface with configurable prompts
+### Document Processing
+- **Multi-Format Document Support**: Extract content from PDF, HTML, DOCX, XML, and LaTeX documents
+- **Automatic Document Type Detection**: Intelligent format detection using extension, MIME type, and content analysis
+- **Advanced Mathematical Formula Detection**: High-precision mathematical content detection with 97.5% false positive reduction
 - **Enhanced DOI Detection**: Robust regex-based DOI extraction from academic papers
+- **OCR Integration**: Optional Mathpix and OpenAI Vision OCR for complex mathematical formulas
+
+### Real-Time Processing
+- **File System Monitoring**: Watch directories for document changes with real-time processing
+- **Incremental Updates**: Efficient incremental graph updates for modified documents
+- **Batch Processing**: Optimized batch processing with parallel execution and progress tracking
+- **Concept Deduplication**: Intelligent deduplication across different document types
+
+### Knowledge Management
+- **External Knowledge Base Integration**: Automatic concept enrichment with DBpedia and Wikidata ontologies
+- **Graph Database Support**: Neo4j integration for concept relationship mapping and ontology storage
+- **Intelligent Caching**: High-performance concept caching with TTL and LRU eviction
+- **Document Chunking and Embedding**: Advanced text chunking with mathematical content preservation and vector store integration
+
+### System Features
+- **YAML-based Configuration**: Centralized settings management with smart defaults
+- **Enhanced CLI**: Comprehensive command-line interface with watch, batch, and monitoring commands
 - **Parallel Processing**: Multi-threaded document processing for improved performance
 - **Global Logging**: Comprehensive logging with file output and structured formatting
 - **Plugin Architecture**: Extensible document format support
-- **Large File Support**: Memory-efficient streaming for very large PDFs
-- **OCR Integration**: Optional Mathpix and OpenAI Vision OCR for complex mathematical formulas
+- **Large File Support**: Memory-efficient streaming for very large documents
+- **Progress Tracking**: Real-time progress reporting for long-running operations
 
 ## Installation
 
@@ -41,6 +57,10 @@ pip install pymupdf pyyaml tqdm jsonschema
 ### Additional Dependencies
 The system requires the following key packages:
 - **PyMuPDF** (`pymupdf`): PDF text extraction and metadata processing
+- **python-docx**: DOCX document processing
+- **beautifulsoup4**: HTML document parsing and extraction
+- **lxml**: XML document processing and parsing
+- **watchdog**: File system monitoring for real-time processing
 - **PyYAML** (`pyyaml`): YAML configuration file parsing
 - **tqdm**: Progress bar display for batch operations
 - **jsonschema**: Configuration validation (optional but recommended)
@@ -49,6 +69,9 @@ The system requires the following key packages:
 - **langchain-text-splitters**: Advanced text chunking with mathematical content awareness
 - **pinecone-client**: Cloud vector database integration (optional)
 - **chromadb**: Local vector database integration (optional)
+- **neo4j**: Graph database driver for concept relationship storage (optional)
+- **requests**: HTTP client for external ontology API calls
+- **SPARQLWrapper**: SPARQL query support for semantic web ontologies (optional)
 
 ## Usage
 
@@ -69,11 +92,14 @@ poetry run python -m src.cli --quiet <command>
 
 ### Ingest Command
 
-Convert PDFs to text and metadata with mathematical formula extraction:
+Process documents from multiple formats (PDF, HTML, DOCX, XML, LaTeX):
 
 ```bash
-# Basic usage with defaults from config.yaml
+# Basic usage with defaults from config.yaml (all supported formats)
 poetry run python -m src.cli ingest
+
+# Process specific document types only
+poetry run python -m src.cli ingest --file-types pdf html docx
 
 # Custom directories
 poetry run python -m src.cli ingest --input-dir ./research-papers --text-dir ./output
@@ -149,6 +175,51 @@ poetry run python -m src.cli test --test-path tests/test_math_detector.py
 poetry run python -m src.cli test --maxfail 3
 ```
 
+### Watch Command
+
+Monitor directories for real-time document processing:
+
+```bash
+# Watch single directory for HTML and PDF files
+poetry run python -m src.cli watch --watch-dirs ./documents --file-types html pdf
+
+# Watch multiple directories recursively
+poetry run python -m src.cli watch --watch-dirs ./docs ./papers ./reports --recursive
+
+# Use batch mode for high-volume scenarios
+poetry run python -m src.cli watch --watch-dirs ./documents --batch-mode --batch-size 5
+
+# Custom ignore patterns
+poetry run python -m src.cli watch --watch-dirs ./documents --ignore-patterns "*.tmp" "*.bak" ".*"
+
+# Monitor all supported formats
+poetry run python -m src.cli watch --watch-dirs ./documents --file-types pdf html docx xml latex
+```
+
+### Batch Command
+
+Efficient batch processing with optimization features:
+
+```bash
+# Basic batch processing
+poetry run python -m src.cli batch --input-dir ./documents
+
+# Process specific file types with parallel workers
+poetry run python -m src.cli batch --input-dir ./documents --file-types pdf docx --max-workers 8
+
+# Enable concept deduplication
+poetry run python -m src.cli batch --input-dir ./documents --deduplicate
+
+# Use external ontology enrichment
+poetry run python -m src.cli batch --input-dir ./documents --external-ontologies
+
+# Custom batch size and progress reporting
+poetry run python -m src.cli batch --input-dir ./documents --batch-size 20 --progress
+
+# Comprehensive processing with all features
+poetry run python -m src.cli batch --input-dir ./documents --deduplicate --external-ontologies --max-workers 4
+```
+
 ### Complete Workflow Examples
 
 Process documents end-to-end:
@@ -164,6 +235,16 @@ poetry run python -m src.cli ingest --verbose --no-math
 poetry run python -m src.cli chunk --preserve-math
 poetry run python -m src.cli embed --local
 poetry run python -m src.cli test --coverage
+
+# Real-time processing workflow
+poetry run python -m src.cli watch --watch-dirs ./incoming-docs --file-types pdf html docx --batch-mode
+
+# Batch processing with optimization
+poetry run python -m src.cli batch --input-dir ./archive-docs --deduplicate --external-ontologies --progress
+
+# Multi-format processing
+poetry run python -m src.cli ingest --file-types html xml latex --input-dir ./mixed-formats
+poetry run python -m src.cli batch --input-dir ./mixed-formats --file-types html xml latex --deduplicate
 ```
 
 ## Configuration
@@ -228,6 +309,25 @@ The system now uses an enhanced mathematical content detector that:
 - **`pinecone_api_key`**: Pinecone API key for cloud vector storage
 - **`chroma_persist_directory`**: Local Chroma database directory
 
+### External Knowledge Base Integration
+- **`enable_external_ontologies`**: Enable automatic concept enrichment with external ontologies
+- **`enable_dbpedia`**: Enable DBpedia knowledge base integration
+- **`enable_wikidata`**: Enable Wikidata knowledge base integration
+- **`external_ontology_timeout`**: Timeout for external API calls in seconds
+- **`external_ontology_max_retries`**: Maximum retry attempts for failed API calls
+- **`cache_dir`**: Directory for caching external ontology data
+- **`max_cache_size`**: Maximum number of cached concepts
+- **`cache_ttl_hours`**: Time-to-live for cached entries in hours
+
+### Graph Database Configuration
+- **`enable_graph_db`**: Enable Neo4j graph database integration
+- **`neo4j_uri`**: Neo4j database connection URI
+- **`neo4j_username`**: Neo4j database username
+- **`neo4j_password`**: Neo4j database password
+- **`neo4j_database`**: Neo4j database name
+- **`graph_concept_threshold`**: Minimum confidence for storing concepts in graph
+- **`graph_relationship_threshold`**: Minimum confidence for storing relationships
+
 ### Text Processing
 - **`preserve_reading_order`**: Maintain reading order during text extraction
 - **`warn_empty_pages`**: Log warnings for empty pages in PDFs
@@ -271,28 +371,55 @@ poetry run python src/ingestion/pdf2txt.py --config ./my-config.yaml
 ```
 ├── config.yaml              # Main configuration file
 ├── src/
-│   └── ingestion/
-│       ├── pdf2txt.py       # Main ingestion script
-│       ├── chunk_embed.py   # Document chunking and embedding pipeline
-│       ├── config_schema.py # Configuration validation
-│       ├── extractor_registry.py # Plugin management
-│       └── extractors/      # Document format extractors
+│   ├── cli.py               # Enhanced command-line interface
+│   ├── ingestion/
+│   │   ├── pdf2txt.py       # Main ingestion script
+│   │   ├── chunk_embed.py   # Document chunking and embedding pipeline
+│   │   ├── config_schema.py # Configuration validation
+│   │   ├── extractor_registry.py # Plugin management
+│   │   └── extractors/      # Document format extractors
+│   │       ├── base.py      # Base extractor interface
+│   │       ├── pdf.py       # PDF document extractor
+│   │       ├── html.py      # HTML document extractor
+│   │       ├── docx.py      # DOCX document extractor
+│   │       ├── xml.py       # XML document extractor
+│   │       ├── latex.py     # LaTeX document extractor
+│   │       └── document_detector.py # Automatic format detection
+│   ├── knowledge/
+│   │   ├── ontology.py      # Financial mathematics ontology framework
+│   │   ├── concept_extractor.py # Concept extraction from documents
+│   │   ├── external_ontologies.py # External knowledge base connectors
+│   │   ├── concept_cache.py # Caching layer for external API calls
+│   │   └── graph_db.py      # Neo4j graph database integration
+│   ├── monitoring/          # Real-time processing components
+│   │   ├── file_watcher.py  # File system monitoring
+│   │   └── incremental_processor.py # Incremental graph updates
+│   ├── optimization/        # Performance optimization
+│   │   ├── batch_processor.py # Batch processing optimization
+│   │   └── concept_deduplicator.py # Concept deduplication
+│   └── settings.py          # Centralized configuration management
 ├── data/
-│   ├── papers/             # Input PDFs (default)
+│   ├── papers/             # Input documents (default)
 │   ├── text/               # Extracted text output with mathematical markers
 │   ├── metadata/           # JSON metadata output
 │   ├── math/               # Mathematical formula files (.math, .refs)
+│   ├── cache/              # External ontology cache storage
 │   └── chroma_db/          # Local Chroma vector database (optional)
 ├── logs/                   # Processing logs
-├── tests/                  # Unit tests
+├── tests/                  # Comprehensive test suite
+│   ├── test_extractors.py  # Document extractor tests
+│   ├── test_monitoring.py  # Real-time processing tests
+│   ├── test_optimization.py # Optimization component tests
+│   └── test_integration.py # End-to-end integration tests
 ├── examples/               # Usage examples and demonstrations
 └── docs/
-    └── Claude.md           # Detailed technical documentation
+    ├── Claude.md           # Detailed technical documentation
+    └── external-knowledge-integration.md # External ontology integration guide
 ```
 
 ## Output Format
 
-For each processed PDF `document.pdf`, the system generates:
+For each processed document (PDF, HTML, DOCX, XML, or LaTeX), the system generates:
 
 ### Text File (`./data/text/document.txt`)
 - Plain text content with enhanced mathematical markers
@@ -385,7 +512,47 @@ poetry run pytest tests/test_math_detector.py -v
 ### Adding New Document Formats
 1. Create a new extractor class inheriting from `BaseExtractor`
 2. Implement required methods: `can_handle()`, `extract_text()`, `extract_metadata()`
-3. Register via entry points in `pyproject.toml`
+3. Register the extractor with the `DocumentDetector`
+4. Add comprehensive tests for the new extractor
+
+Example:
+```python
+from src.ingestion.extractors.base import BaseExtractor
+
+class MyCustomExtractor(BaseExtractor):
+    def can_handle(self, file_path: Path) -> bool:
+        return file_path.suffix.lower() == '.mycustom'
+    
+    def extract_text(self, file_path: Path, config: Dict[str, Any]) -> str:
+        # Implementation here
+        pass
+    
+    def extract_metadata(self, file_path: Path, config: Dict[str, Any]) -> Dict[str, Any]:
+        # Implementation here
+        pass
+    
+    @property
+    def supported_extensions(self) -> list[str]:
+        return ['.mycustom']
+    
+    @property
+    def extractor_name(self) -> str:
+        return "My Custom Extractor"
+```
+
+### Real-Time Processing Integration
+The system supports real-time processing through file system monitoring:
+
+1. **File Watching**: Monitor directories for document changes
+2. **Incremental Processing**: Process only changed documents
+3. **Batch Optimization**: Group multiple changes for efficient processing
+4. **Concept Deduplication**: Remove duplicate concepts across document types
+
+### Performance Optimization
+- **Parallel Processing**: Configurable worker threads for batch operations
+- **Memory Management**: Efficient handling of large documents
+- **Caching**: Intelligent caching of external ontology data
+- **Progress Tracking**: Real-time progress reporting for long operations
 
 ### Configuration Validation
 The system includes JSON schema validation for `config.yaml`. Invalid configurations will be caught at startup with descriptive error messages.
@@ -404,6 +571,8 @@ The system includes JSON schema validation for `config.yaml`. Invalid configurat
 
 ## Support
 
-For detailed technical documentation, see [docs/Claude.md](docs/Claude.md).
+For detailed technical documentation, see:
+- [docs/Claude.md](docs/Claude.md) - Comprehensive technical documentation
+- [docs/external-knowledge-integration.md](docs/external-knowledge-integration.md) - External ontology integration guide
 
 For issues and feature requests, please use the project's issue tracker.

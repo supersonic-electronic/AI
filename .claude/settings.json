@@ -1,0 +1,14 @@
+{
+  "cleanupPeriodDays": 30,
+  "includeCoAuthoredBy": true,
+  "permissions": {
+    "additionalDirectories": [
+      ".claude/"
+    ],
+    "defaultMode": "default"
+  },
+  "env": {
+    "PYTHONPATH": "src:.",
+    "POETRY_ACTIVE": "1"
+  }
+}

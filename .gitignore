@@ -131,5 +131,5 @@ Thumbs.db
 logs/
 *.log
 
-# Claude Code CLI context (contains local settings and documentation)
-.claude/
+# Keep .claude directory for Claude Code CLI context
+# .claude/

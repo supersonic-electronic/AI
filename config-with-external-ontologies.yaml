@@ -1,0 +1,134 @@
+# AI Portfolio Optimizer Configuration with External Knowledge Integration
+# This configuration file demonstrates the external ontology integration features
+
+# Directory Paths
+input_dir: "./data/papers"
+text_dir: "./data/text"
+meta_dir: "./data/metadata"
+math_dir: "./data/math"
+
+# Logging Configuration
+log_level: "INFO"
+log_to_file: true
+log_file: "./logs/pdf_ingestion.log"
+log_format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+
+# DOI Extraction
+doi_regex: "10\\.[0-9]{4,}[-._;()/:a-zA-Z0-9]*"
+doi_prefixes:
+  - "doi:"
+  - "DOI:"
+  - "https://doi.org/"
+  - "http://dx.doi.org/"
+
+# Processing Options
+parallel_workers: 4
+skip_existing: false
+show_progress: true
+
+# PyMuPDF Text Extraction Options
+preserve_reading_order: true
+warn_empty_pages: true
+include_images: false
+pdf_chunk_size: 0
+
+# Mathematical Formula Extraction
+extract_math: true
+math_ocr_fallback: false
+separate_math_files: true
+math_detection_threshold: 3
+
+# API Keys (set via environment variables for security)
+# openai_api_key: "your-openai-key-here"
+# mathpix_app_id: "your-mathpix-app-id"
+# mathpix_app_key: "your-mathpix-app-key"
+# pinecone_api_key: "your-pinecone-key"
+
+# Mathpix SDK Configuration
+mathpix_timeout: 30.0
+mathpix_max_retries: 3
+mathpix_retry_delay: 1.0
+
+# Document Chunking and Embedding
+chunk_size: 500
+chunk_overlap: 50
+embedding_model: "text-embedding-3-small"
+embedding_batch_size: 30
+max_retries: 3
+retry_delay: 1.0
+
+# Vector Store Configuration - Pinecone
+pinecone_index_name: "document-embeddings"
+pinecone_environment: "us-east-1-aws"
+
+# Vector Store Configuration - Chroma
+chroma_persist_directory: "./data/chroma_db"
+chroma_collection_name: "document_embeddings"
+
+# File Handling
+encoding: "utf-8"
+json_indent: 2
+overwrite_existing: true
+
+# Performance Settings
+openai_timeout: 60.0
+concurrent_requests: 5
+
+# Plugin Configuration
+plugin_search_paths:
+  - "plugins"
+  - "src.plugins"
+enable_plugins: true
+
+# Graph Database Configuration (Neo4j)
+enable_graph_db: true
+neo4j_uri: "neo4j://localhost:7687"
+neo4j_username: "neo4j"
+neo4j_password: "password"
+neo4j_database: "neo4j"
+neo4j_timeout: 30.0
+
+# Graph Database Settings
+graph_concept_threshold: 0.5
+graph_relationship_threshold: 0.3
+graph_max_batch_size: 1000
+
+# External Ontology Integration
+enable_external_ontologies: true
+enable_dbpedia: true
+enable_wikidata: true
+external_ontology_timeout: 10.0
+external_ontology_max_retries: 3
+external_ontology_retry_delay: 1.0
+
+# Concept Caching Configuration
+cache_dir: "./data/cache"
+max_cache_size: 10000
+cache_ttl_hours: 168  # 1 week
+enable_cache_cleanup: true
+
+# Example Configuration for Different Scenarios:
+
+# High-Performance Configuration (uncomment to use):
+# parallel_workers: 8
+# max_cache_size: 50000
+# cache_ttl_hours: 336  # 2 weeks
+# external_ontology_timeout: 15.0
+# concurrent_requests: 10
+
+# Development Configuration (uncomment to use):
+# enable_external_ontologies: false
+# enable_graph_db: false
+# parallel_workers: 2
+# log_level: "DEBUG"
+# max_cache_size: 1000
+
+# Production Configuration (uncomment to use):
+# enable_external_ontologies: true
+# enable_graph_db: true
+# parallel_workers: 12
+# max_cache_size: 100000
+# cache_ttl_hours: 720  # 30 days
+# external_ontology_timeout: 20.0
+# graph_max_batch_size: 5000
+# log_level: "WARNING"
