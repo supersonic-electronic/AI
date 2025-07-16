@@ -1,0 +1,100 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+env:
+  PYTHON_VERSION: "3.11"
+
+jobs:
+  # Create GitHub Release
+  release:
+    runs-on: ubuntu-latest
+    name: Create Release
+    
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+      version: ${{ steps.get_version.outputs.version }}
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Get version from tag
+      id: get_version
+      run: echo "version=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+      
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: Release ${{ github.ref }}
+        body: |
+          AI Knowledge Graph System Release ${{ steps.get_version.outputs.version }}
+          
+          ## What's New
+          - Enhanced web frontend with Phase 3 features
+          - Production-ready deployment
+          - Comprehensive test coverage
+          - Improved documentation
+          
+          ## Installation
+          ```bash
+          git clone https://github.com/supersonic-electronic/AI.git
+          cd AI
+          poetry install
+          poetry run python main.py server
+          ```
+          
+          See [COMPLETE_WORKFLOW_GUIDE.md](docs/COMPLETE_WORKFLOW_GUIDE.md) for detailed instructions.
+        draft: false
+        prerelease: false
+
+  # Build and upload artifacts
+  build:
+    runs-on: ubuntu-latest
+    name: Build Artifacts
+    needs: release
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+        
+    - name: Install Poetry
+      uses: snok/install-poetry@v1
+      with:
+        version: latest
+        
+    - name: Build package
+      run: poetry build
+      
+    - name: Create distribution archive
+      run: |
+        tar -czf ai-knowledge-graph-${{ needs.release.outputs.version }}.tar.gz \
+          --exclude='.git' \
+          --exclude='__pycache__' \
+          --exclude='*.pyc' \
+          --exclude='.pytest_cache' \
+          --exclude='htmlcov' \
+          --exclude='dist' \
+          .
+      
+    - name: Upload distribution archive
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ needs.release.outputs.upload_url }}
+        asset_path: ./ai-knowledge-graph-${{ needs.release.outputs.version }}.tar.gz
+        asset_name: ai-knowledge-graph-${{ needs.release.outputs.version }}.tar.gz
+        asset_content_type: application/gzip

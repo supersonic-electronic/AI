@@ -17,6 +17,7 @@ from typing import Optional
 
 from src.logging_config import setup_logging
 from src.settings import Settings
+from src.config_validator import validate_and_transform_config, ConfigValidationError
 
 
 def create_parser() -> argparse.ArgumentParser:
@@ -1233,7 +1234,18 @@ def main() -> int:
         return 1
     
     try:
-        # Load settings
+        # Validate configuration first
+        try:
+            validated_config = validate_and_transform_config(
+                config_path=str(args.config),
+                schema_path="config_schema.json",
+                exit_on_error=True
+            )
+        except ConfigValidationError as e:
+            print(f"Configuration validation failed: {e}", file=sys.stderr)
+            return 1
+        
+        # Load settings with validated config
         settings = Settings.from_env_and_yaml(args.config)
         
         # Override log level based on verbosity
@@ -1244,6 +1256,9 @@ def main() -> int:
         
         # Setup logging
         setup_logging(settings)
+        
+        # Log successful configuration validation
+        logging.info("Configuration validation successful")
         
         # Create directories
         settings.create_directories()

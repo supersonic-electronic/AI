@@ -1,5 +1,8 @@
 """
 Unit tests for document extractors.
+
+This module tests all document extractors using fixtures and parametrized tests
+following pytest best practices.
 """
 
 import pytest
@@ -11,133 +14,149 @@ from src.ingestion.extractors.docx import DOCXExtractor
 from src.ingestion.extractors.xml import XMLExtractor
 from src.ingestion.extractors.latex import LaTeXExtractor
 from src.ingestion.extractors.document_detector import DocumentDetector
+from src.ingestion.extractors.base import BaseExtractor
 
 
+@pytest.mark.unit
+class TestExtractorBase:
+    """Test base extractor functionality shared across all extractors."""
+    
+    @pytest.mark.parametrize("extractor_name,expected_extensions", [
+        ("html", [".html", ".htm"]),
+        ("docx", [".docx"]),
+        ("xml", [".xml"]),
+        ("latex", [".tex", ".latex"])
+    ])
+    def test_supported_extensions(self, sample_extractors, extractor_name, expected_extensions):
+        """Test that extractors report correct supported extensions."""
+        extractor = sample_extractors[extractor_name]
+        extensions = extractor.supported_extensions
+        
+        for ext in expected_extensions:
+            assert ext in extensions
+        assert len(extensions) == len(expected_extensions)
+    
+    @pytest.mark.parametrize("extractor_name", ["html", "docx", "xml", "latex"])
+    def test_extractor_name_property(self, sample_extractors, extractor_name):
+        """Test that all extractors have a valid name property."""
+        extractor = sample_extractors[extractor_name]
+        name = extractor.extractor_name
+        
+        assert isinstance(name, str)
+        assert len(name) > 0
+        assert extractor_name.upper() in name.upper()
+    
+    @pytest.mark.parametrize("extractor_name", ["html", "docx", "xml", "latex"])
+    def test_extractor_inheritance(self, sample_extractors, extractor_name):
+        """Test that all extractors inherit from BaseExtractor."""
+        extractor = sample_extractors[extractor_name]
+        assert isinstance(extractor, BaseExtractor)
+
+
+@pytest.mark.unit
 class TestHTMLExtractor:
     """Test cases for HTML extractor."""
     
-    def test_can_handle_html_files(self):
+    @pytest.fixture
+    def html_extractor(self):
+        """Create HTML extractor instance."""
+        return HTMLExtractor()
+    
+    def test_can_handle_html_files(self, html_extractor, sample_file_paths):
         """Test that HTMLExtractor can handle HTML files."""
-        extractor = HTMLExtractor()
-        
-        assert extractor.can_handle(Path("test.html"))
-        assert extractor.can_handle(Path("test.htm"))
-        assert not extractor.can_handle(Path("test.pdf"))
-        assert not extractor.can_handle(Path("test.txt"))
+        assert html_extractor.can_handle(sample_file_paths['html'])
+        assert html_extractor.can_handle(sample_file_paths['htm'])
+        assert not html_extractor.can_handle(sample_file_paths['pdf'])
+        assert not html_extractor.can_handle(sample_file_paths['unknown'])
     
-    def test_supported_extensions(self):
-        """Test supported extensions property."""
-        extractor = HTMLExtractor()
-        extensions = extractor.supported_extensions
-        
-        assert ".html" in extensions
-        assert ".htm" in extensions
-        assert len(extensions) == 2
-    
-    def test_extractor_name(self):
+    def test_extractor_name(self, html_extractor):
         """Test extractor name property."""
-        extractor = HTMLExtractor()
-        assert "HTML" in extractor.extractor_name
-        assert "BeautifulSoup" in extractor.extractor_name
+        assert "HTML" in html_extractor.extractor_name
+        assert "BeautifulSoup" in html_extractor.extractor_name
     
-    @patch("builtins.open", new_callable=mock_open, read_data="<html><body><h1>Test</h1><p>Content</p></body></html>")
-    @patch("src.ingestion.extractors.html.BeautifulSoup")
-    def test_extract_text_basic(self, mock_bs, mock_file):
+    def test_extract_text_basic(self, html_extractor, mock_html_content):
         """Test basic text extraction from HTML."""
-        mock_soup = Mock()
-        mock_soup.get_text.return_value = "Test Content"
-        mock_bs.return_value = mock_soup
-        
-        extractor = HTMLExtractor()
-        config = {}
-        
-        text = extractor.extract_text(Path("test.html"), config)
-        
-        assert text == "Test Content"
-        mock_file.assert_called_once()
+        with patch("builtins.open", mock_open(read_data=mock_html_content)):
+            with patch("src.ingestion.extractors.html.BeautifulSoup") as mock_bs:
+                mock_soup = Mock()
+                mock_soup.get_text.return_value = "Test Document Main Title This is a paragraph with some content. E(R) = w'μ Footer content"
+                mock_bs.return_value = mock_soup
+                
+                text = html_extractor.extract_text(Path("test.html"), {})
+                
+                assert "Test Document" in text
+                assert "Main Title" in text
+                assert "E(R) = w'μ" in text
     
-    @patch("builtins.open", new_callable=mock_open, read_data="<html><head><title>Test Title</title></head></html>")
-    @patch("src.ingestion.extractors.html.BeautifulSoup")
-    def test_extract_metadata_basic(self, mock_bs, mock_file):
+    def test_extract_metadata_basic(self, html_extractor, mock_html_content):
         """Test basic metadata extraction from HTML."""
-        mock_soup = Mock()
-        mock_title = Mock()
-        mock_title.get_text.return_value = "Test Title"
-        mock_soup.find.return_value = mock_title
-        mock_soup.find_all.return_value = []
-        
-        extractor = HTMLExtractor()
-        extractor.soup = mock_soup
-        config = {}
-        
-        metadata = extractor.extract_metadata(Path("test.html"), config)
-        
-        assert "filename" in metadata
-        assert metadata["filename"] == "test.html"
+        with patch("builtins.open", mock_open(read_data=mock_html_content)):
+            with patch("src.ingestion.extractors.html.BeautifulSoup") as mock_bs:
+                mock_soup = Mock()
+                
+                # Mock title element
+                mock_title = Mock()
+                mock_title.get_text.return_value = "Test Document"
+                mock_soup.find.return_value = mock_title
+                
+                # Mock meta elements
+                mock_meta_author = Mock()
+                mock_meta_author.get.return_value = "Test Author"
+                mock_meta_desc = Mock()
+                mock_meta_desc.get.return_value = "Test Description"
+                mock_soup.find_all.return_value = [mock_meta_author, mock_meta_desc]
+                
+                mock_bs.return_value = mock_soup
+                html_extractor.soup = mock_soup
+                
+                metadata = html_extractor.extract_metadata(Path("test.html"), {})
+                
+                assert metadata["filename"] == "test.html"
 
 
+@pytest.mark.unit
 class TestDOCXExtractor:
     """Test cases for DOCX extractor."""
     
-    def test_can_handle_docx_files(self):
+    @pytest.fixture
+    def docx_extractor(self):
+        """Create DOCX extractor instance."""
+        return DOCXExtractor()
+    
+    def test_can_handle_docx_files(self, docx_extractor, sample_file_paths):
         """Test that DOCXExtractor can handle DOCX files."""
-        extractor = DOCXExtractor()
-        
-        assert extractor.can_handle(Path("test.docx"))
-        assert not extractor.can_handle(Path("test.doc"))
-        assert not extractor.can_handle(Path("test.pdf"))
+        assert docx_extractor.can_handle(sample_file_paths['docx'])
+        assert not docx_extractor.can_handle(sample_file_paths['pdf'])
+        assert not docx_extractor.can_handle(sample_file_paths['html'])
     
-    def test_supported_extensions(self):
-        """Test supported extensions property."""
-        extractor = DOCXExtractor()
-        extensions = extractor.supported_extensions
-        
-        assert ".docx" in extensions
-        assert len(extensions) == 1
-    
-    def test_extractor_name(self):
+    def test_extractor_name(self, docx_extractor):
         """Test extractor name property."""
-        extractor = DOCXExtractor()
-        assert "DOCX" in extractor.extractor_name
-        assert "python-docx" in extractor.extractor_name
+        assert "DOCX" in docx_extractor.extractor_name
+        assert "python-docx" in docx_extractor.extractor_name
     
-    @patch("src.ingestion.extractors.docx.Document")
-    def test_extract_text_basic(self, mock_document_class):
+    def test_extract_text_basic(self, docx_extractor, mock_docx_content):
         """Test basic text extraction from DOCX."""
-        mock_doc = Mock()
-        mock_paragraph = Mock()
-        mock_paragraph.text = "Test paragraph"
-        mock_doc.paragraphs = [mock_paragraph]
-        mock_doc.tables = []
-        mock_document_class.return_value = mock_doc
-        
-        extractor = DOCXExtractor()
-        config = {}
-        
-        text = extractor.extract_text(Path("test.docx"), config)
-        
-        assert "Test paragraph" in text
+        with patch("src.ingestion.extractors.docx.Document") as mock_document_class:
+            mock_document_class.return_value = mock_docx_content
+            
+            text = docx_extractor.extract_text(Path("test.docx"), {})
+            
+            assert "First paragraph content" in text
+            assert "Second paragraph with formula: E(R) = w'μ" in text
+            assert "Cell content" in text
     
-    @patch("src.ingestion.extractors.docx.Document")
-    def test_extract_metadata_basic(self, mock_document_class):
+    def test_extract_metadata_basic(self, docx_extractor, mock_docx_content):
         """Test basic metadata extraction from DOCX."""
-        mock_doc = Mock()
-        mock_props = Mock()
-        mock_props.title = "Test Title"
-        mock_props.author = "Test Author"
-        mock_doc.core_properties = mock_props
-        mock_doc.paragraphs = []
-        mock_doc.tables = []
-        mock_doc.sections = []
-        mock_document_class.return_value = mock_doc
-        
-        extractor = DOCXExtractor()
-        config = {}
-        
-        metadata = extractor.extract_metadata(Path("test.docx"), config)
-        
-        assert metadata["title"] == "Test Title"
-        assert metadata["author"] == "Test Author"
+        with patch("src.ingestion.extractors.docx.Document") as mock_document_class:
+            mock_document_class.return_value = mock_docx_content
+            docx_extractor.doc = mock_docx_content
+            
+            metadata = docx_extractor.extract_metadata(Path("test.docx"), {})
+            
+            assert metadata["title"] == "Test Document"
+            assert metadata["author"] == "Test Author"
+            assert metadata["subject"] == "Test Subject"
+            assert metadata["keywords"] == "test, keywords"
 
 
 class TestXMLExtractor:

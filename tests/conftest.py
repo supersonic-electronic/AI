@@ -265,6 +265,209 @@ def mock_logging():
         yield mock_logger
 
 
+# Additional fixtures for improved testing
+
+
+@pytest.fixture
+def mock_html_content():
+    """Sample HTML content for testing HTML extractor."""
+    return """
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Test Document</title>
+        <meta name="author" content="Test Author">
+        <meta name="description" content="Test Description">
+    </head>
+    <body>
+        <h1>Main Title</h1>
+        <p>This is a paragraph with some content.</p>
+        <div class="math">E(R) = w'μ</div>
+        <footer>Footer content</footer>
+    </body>
+    </html>
+    """
+
+
+@pytest.fixture
+def mock_docx_content():
+    """Mock DOCX document structure for testing."""
+    mock_doc = Mock()
+    
+    # Mock paragraphs
+    mock_paragraph1 = Mock()
+    mock_paragraph1.text = "First paragraph content"
+    mock_paragraph2 = Mock()
+    mock_paragraph2.text = "Second paragraph with formula: E(R) = w'μ"
+    mock_doc.paragraphs = [mock_paragraph1, mock_paragraph2]
+    
+    # Mock tables
+    mock_table = Mock()
+    mock_row = Mock()
+    mock_cell = Mock()
+    mock_cell.text = "Cell content"
+    mock_row.cells = [mock_cell]
+    mock_table.rows = [mock_row]
+    mock_doc.tables = [mock_table]
+    
+    # Mock core properties
+    mock_props = Mock()
+    mock_props.title = "Test Document"
+    mock_props.author = "Test Author"
+    mock_props.subject = "Test Subject"
+    mock_props.keywords = "test, keywords"
+    mock_doc.core_properties = mock_props
+    
+    # Mock sections
+    mock_section = Mock()
+    mock_doc.sections = [mock_section]
+    
+    return mock_doc
+
+
+@pytest.fixture
+def mock_xml_content():
+    """Sample XML content for testing XML extractor."""
+    return """
+    <?xml version="1.0" encoding="UTF-8"?>
+    <document>
+        <metadata>
+            <title>Test XML Document</title>
+            <author>Test Author</author>
+        </metadata>
+        <content>
+            <section id="1">
+                <heading>Introduction</heading>
+                <paragraph>This is test content.</paragraph>
+                <formula>σ²_p = w'Σw</formula>
+            </section>
+        </content>
+    </document>
+    """
+
+
+@pytest.fixture
+def mock_latex_content():
+    """Sample LaTeX content for testing LaTeX extractor."""
+    return r"""
+    \documentclass{article}
+    \title{Portfolio Optimization}
+    \author{Test Author}
+    \date{\today}
+    
+    \begin{document}
+    \maketitle
+    
+    \section{Introduction}
+    This document discusses portfolio optimization theory.
+    
+    The expected return is given by:
+    \begin{equation}
+    E(R_p) = w'\mu
+    \end{equation}
+    
+    Where $w$ is the weight vector and $\mu$ is the mean return vector.
+    
+    \subsection{Risk}
+    The portfolio variance is:
+    \begin{align}
+    \sigma^2_p &= w'\Sigma w
+    \end{align}
+    
+    \end{document}
+    """
+
+
+@pytest.fixture
+def sample_extractors():
+    """Create sample extractor instances for testing."""
+    from src.ingestion.extractors.html import HTMLExtractor
+    from src.ingestion.extractors.docx import DOCXExtractor
+    from src.ingestion.extractors.xml import XMLExtractor
+    from src.ingestion.extractors.latex import LaTeXExtractor
+    
+    return {
+        'html': HTMLExtractor(),
+        'docx': DOCXExtractor(),
+        'xml': XMLExtractor(),
+        'latex': LaTeXExtractor()
+    }
+
+
+@pytest.fixture
+def sample_file_paths(temp_dir):
+    """Create sample file paths for different document types."""
+    return {
+        'html': temp_dir / "test.html",
+        'htm': temp_dir / "test.htm", 
+        'docx': temp_dir / "test.docx",
+        'xml': temp_dir / "test.xml",
+        'tex': temp_dir / "test.tex",
+        'latex': temp_dir / "test.latex",
+        'pdf': temp_dir / "test.pdf",
+        'unknown': temp_dir / "test.unknown"
+    }
+
+
+@pytest.fixture
+def mock_extraction_result():
+    """Sample extraction result structure."""
+    return {
+        'text': 'Sample extracted text content',
+        'metadata': {
+            'filename': 'test_document.pdf',
+            'title': 'Test Document',
+            'author': 'Test Author',
+            'pages': 3,
+            'words': 150,
+            'extraction_time': 1.23
+        },
+        'math_blocks': [
+            {
+                'block_id': 'math_1',
+                'raw_text': 'E(R) = w\'μ',
+                'latex': '$E(R) = w\'\\mu$',
+                'confidence': 0.85,
+                'page': 1
+            }
+        ]
+    }
+
+
+@pytest.fixture(params=['html', 'docx', 'xml', 'latex'])
+def extractor_type(request):
+    """Parametrized fixture for different extractor types."""
+    return request.param
+
+
+@pytest.fixture
+def registry_config():
+    """Configuration for extractor registry testing."""
+    return {
+        'load_plugins': True,
+        'fallback_enabled': True,
+        'log_level': 'DEBUG'
+    }
+
+
+@pytest.fixture
+def mock_entry_point():
+    """Mock entry point for plugin testing."""
+    mock_ep = Mock()
+    mock_ep.name = "test_plugin"
+    mock_ep.value = "test_plugins.extractors:TestExtractor"
+    
+    # Mock extractor class
+    mock_extractor_class = Mock()
+    mock_extractor_instance = Mock()
+    mock_extractor_instance.extractor_name = "Test Plugin Extractor"
+    mock_extractor_instance.supported_extensions = [".test"]
+    mock_extractor_class.return_value = mock_extractor_instance
+    
+    mock_ep.load.return_value = mock_extractor_class
+    return mock_ep
+
+
 # Test markers for different test types
 def pytest_configure(config):
     """Configure pytest markers."""

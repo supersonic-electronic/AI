@@ -31,6 +31,14 @@ poetry run python main.py server
 - **Help System** - Interactive help modal with comprehensive keyboard shortcuts
 - **Error Handling** - Robust error boundaries with user-friendly recovery options
 
+### 🔧 Development & DevOps Features
+- **Comprehensive CI/CD** - GitHub Actions workflows with quality gates, testing, and deployment
+- **Configuration Validation** - JSON Schema validation with startup error checking
+- **Plugin Architecture** - Entry point-based plugin discovery for extensible document processing
+- **Pre-commit Hooks** - Automated code quality, security, and testing checks
+- **Documentation** - Sphinx-based API documentation with GitHub Pages deployment
+- **Type Safety** - mypy type checking with comprehensive coverage
+
 ## Features
 
 ### Document Processing
@@ -526,6 +534,69 @@ python src/ingestion/chunk_embed.py --input-dir ./custom/text --config ./custom-
 
 ## Development
 
+### CI/CD Pipeline
+
+The project includes comprehensive GitHub Actions workflows:
+
+#### Continuous Integration (`.github/workflows/ci.yml`)
+- **Code Quality**: Black, isort, flake8, mypy checks
+- **Security Audit**: Safety dependency scanning
+- **Multi-version Testing**: Python 3.9-3.12 compatibility
+- **Coverage Reporting**: Codecov integration with 70% minimum coverage
+- **Integration Tests**: Complete workflow validation
+- **Documentation**: Automatic Sphinx documentation building
+
+#### Release Automation (`.github/workflows/release.yml`)
+- **Automated Releases**: Tag-based release creation
+- **Build Artifacts**: Distribution packages and archives
+- **GitHub Pages**: Documentation deployment
+
+### Development Setup
+
+1. **Install pre-commit hooks** (recommended):
+   ```bash
+   poetry install --with dev
+   pre-commit install
+   ```
+
+2. **Run quality checks manually**:
+   ```bash
+   # Code formatting
+   poetry run black src/ tests/
+   poetry run isort src/ tests/
+   
+   # Linting
+   poetry run flake8 src/ tests/
+   poetry run mypy src/
+   
+   # Security scan
+   poetry run bandit -r src/
+   ```
+
+3. **Build documentation**:
+   ```bash
+   cd docs/
+   poetry run sphinx-build -b html . _build/html
+   ```
+
+### Configuration Validation
+
+The system includes comprehensive configuration validation:
+
+```bash
+# Validate configuration at startup (automatic)
+poetry run python -m src.cli --config config.yaml ingest
+
+# Manual validation
+poetry run python -c "from src.config_validator import validate_config_file; validate_config_file()"
+```
+
+**Configuration Schema Features:**
+- JSON Schema validation for all configuration options
+- Legacy configuration transformation for backward compatibility
+- Detailed error messages with field-level validation
+- Startup validation with clear error reporting
+
 ### Running Tests
 ```bash
 # Run all tests
@@ -536,38 +607,84 @@ poetry run pytest tests/ -v --cov=src --cov-report=html
 
 # Run specific test file
 poetry run pytest tests/test_math_detector.py -v
+
+# Run tests by marker
+poetry run pytest -m unit tests/
+poetry run pytest -m integration tests/
+
+# CLI test runner
+poetry run python -m src.cli test --coverage --markers unit
 ```
 
-### Adding New Document Formats
-1. Create a new extractor class inheriting from `BaseExtractor`
-2. Implement required methods: `can_handle()`, `extract_text()`, `extract_metadata()`
-3. Register the extractor with the `DocumentDetector`
-4. Add comprehensive tests for the new extractor
+### Plugin System
 
-Example:
-```python
-from src.ingestion.extractors.base import BaseExtractor
+The system uses entry points for plugin discovery, supporting both built-in and external extractors:
 
-class MyCustomExtractor(BaseExtractor):
-    def can_handle(self, file_path: Path) -> bool:
-        return file_path.suffix.lower() == '.mycustom'
-    
-    def extract_text(self, file_path: Path, config: Dict[str, Any]) -> str:
-        # Implementation here
-        pass
-    
-    def extract_metadata(self, file_path: Path, config: Dict[str, Any]) -> Dict[str, Any]:
-        # Implementation here
-        pass
-    
-    @property
-    def supported_extensions(self) -> list[str]:
-        return ['.mycustom']
-    
-    @property
-    def extractor_name(self) -> str:
-        return "My Custom Extractor"
+#### Built-in Extractors (via entry points)
+All built-in extractors are registered in `pyproject.toml`:
+```toml
+[project.entry-points."project.plugins"]
+pdf = "src.ingestion.extractors.pdf:PDFExtractor"
+html = "src.ingestion.extractors.html:HTMLExtractor"
+docx = "src.ingestion.extractors.docx:DOCXExtractor"
+xml = "src.ingestion.extractors.xml:XMLExtractor"
+latex = "src.ingestion.extractors.latex:LaTeXExtractor"
 ```
+
+#### Adding New Document Formats
+
+1. **Create Extractor Class**:
+   ```python
+   from src.ingestion.extractors.base import BaseExtractor
+   
+   class MyCustomExtractor(BaseExtractor):
+       def can_handle(self, file_path: Path) -> bool:
+           return file_path.suffix.lower() == '.mycustom'
+       
+       def extract_text(self, file_path: Path, config: Dict[str, Any]) -> str:
+           # Implementation here
+           pass
+       
+       def extract_metadata(self, file_path: Path, config: Dict[str, Any]) -> Dict[str, Any]:
+           # Implementation here
+           pass
+       
+       @property
+       def supported_extensions(self) -> list[str]:
+           return ['.mycustom']
+       
+       @property
+       def extractor_name(self) -> str:
+           return "My Custom Extractor"
+   ```
+
+2. **Register as Entry Point**:
+   ```toml
+   [project.entry-points."project.plugins"]
+   mycustom = "my_package.extractors:MyCustomExtractor"
+   ```
+
+3. **Add Tests**:
+   ```python
+   # tests/test_my_extractor.py
+   import pytest
+   from my_package.extractors import MyCustomExtractor
+   
+   @pytest.mark.unit
+   class TestMyCustomExtractor:
+       @pytest.fixture
+       def extractor(self):
+           return MyCustomExtractor()
+           
+       def test_can_handle_mycustom_files(self, extractor, sample_file_paths):
+           assert extractor.can_handle(sample_file_paths['mycustom'])
+   ```
+
+#### Plugin Discovery Features
+- **Automatic Discovery**: Extractors loaded via `importlib.metadata.entry_points()`
+- **Fallback Support**: Manual loading if entry points fail
+- **Error Handling**: Graceful handling of missing or invalid plugins
+- **Logging**: Comprehensive logging of plugin loading process
 
 ### Real-Time Processing Integration
 The system supports real-time processing through file system monitoring:
@@ -598,10 +715,35 @@ The system includes JSON schema validation for `config.yaml`. Invalid configurat
 
 [Add your license information here]
 
-## Support
+## Documentation
 
-For detailed technical documentation, see:
+### API Documentation
+The project includes comprehensive Sphinx-based documentation:
+
+```bash
+# Build documentation locally
+cd docs/
+poetry run sphinx-build -b html . _build/html
+open _build/html/index.html
+```
+
+**Documentation Features:**
+- **Auto-generated API docs** from docstrings
+- **Installation and setup guides**
+- **Module-by-module documentation**
+- **Configuration reference**
+- **Development guidelines**
+
+### Live Documentation
+- **GitHub Pages**: Automatic deployment via GitHub Actions
+- **URL**: `https://supersonic-electronic.github.io/AI/` (when deployed)
+
+### Additional Resources
 - [docs/Claude.md](docs/Claude.md) - Comprehensive technical documentation
 - [docs/external-knowledge-integration.md](docs/external-knowledge-integration.md) - External ontology integration guide
+- [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) - Deployment guidelines
+- [docs/COMPLETE_WORKFLOW_GUIDE.md](docs/COMPLETE_WORKFLOW_GUIDE.md) - End-to-end workflow guide
+
+## Support
 
 For issues and feature requests, please use the project's issue tracker.

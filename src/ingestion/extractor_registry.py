@@ -23,20 +23,10 @@ class ExtractorRegistry:
         """Initialize the extractor registry."""
         self.extractors: List[BaseExtractor] = []
         self.logger = logging.getLogger(__name__)
-        self._load_built_in_extractors()
-        self._load_plugin_extractors()
+        self._load_extractors_from_entry_points()
     
-    def _load_built_in_extractors(self) -> None:
-        """Load built-in extractors."""
-        try:
-            from .extractors.pdf import PDFExtractor
-            self.extractors.append(PDFExtractor())
-            self.logger.info("Loaded built-in PDF extractor")
-        except ImportError as e:
-            self.logger.warning(f"Could not load PDF extractor: {e}")
-    
-    def _load_plugin_extractors(self) -> None:
-        """Load plugin extractors via entry points using importlib.metadata."""
+    def _load_extractors_from_entry_points(self) -> None:
+        """Load all extractors (both built-in and plugins) via entry points using importlib.metadata."""
         try:
             # Try modern importlib.metadata first (Python 3.8+)
             try:
@@ -55,33 +45,69 @@ class ExtractorRegistry:
                     import pkg_resources
                     eps = pkg_resources.iter_entry_points('project.plugins')
             
-            # Load each plugin
-            plugins_loaded = 0
+            # Load each extractor
+            extractors_loaded = 0
             for entry_point in eps:
                 try:
-                    # Load the plugin class
-                    plugin_class = entry_point.load()
+                    # Load the extractor class
+                    extractor_class = entry_point.load()
                     
                     # Verify it's a valid extractor
-                    if isinstance(plugin_class, type) and issubclass(plugin_class, BaseExtractor):
+                    if isinstance(extractor_class, type) and issubclass(extractor_class, BaseExtractor):
                         # Instantiate the extractor
-                        extractor = plugin_class()
+                        extractor = extractor_class()
                         self.extractors.append(extractor)
-                        plugins_loaded += 1
-                        self.logger.info(f"Loaded plugin extractor: {extractor.extractor_name} from {entry_point.name}")
+                        extractors_loaded += 1
+                        
+                        # Determine if it's built-in or plugin
+                        extractor_type = "built-in" if entry_point.value.startswith("src.") else "plugin"
+                        self.logger.info(f"Loaded {extractor_type} extractor: {extractor.extractor_name} from {entry_point.name}")
                     else:
-                        self.logger.warning(f"Plugin {entry_point.name} is not a valid BaseExtractor subclass")
+                        self.logger.warning(f"Entry point {entry_point.name} is not a valid BaseExtractor subclass")
                         
                 except Exception as e:
-                    self.logger.error(f"Failed to load plugin extractor {entry_point.name}: {e}")
+                    self.logger.error(f"Failed to load extractor {entry_point.name}: {e}")
             
-            if plugins_loaded > 0:
-                self.logger.info(f"Successfully loaded {plugins_loaded} plugin extractors")
+            if extractors_loaded > 0:
+                self.logger.info(f"Successfully loaded {extractors_loaded} extractors total")
             else:
-                self.logger.debug("No plugin extractors found or loaded")
+                self.logger.warning("No extractors found or loaded - falling back to manual loading")
+                self._fallback_load_built_in_extractors()
                     
         except Exception as e:
-            self.logger.debug(f"Plugin loading failed, continuing with built-in extractors only: {e}")
+            self.logger.warning(f"Entry point loading failed, falling back to manual loading: {e}")
+            self._fallback_load_built_in_extractors()
+    
+    def _fallback_load_built_in_extractors(self) -> None:
+        """Fallback method to manually load built-in extractors if entry points fail."""
+        fallback_extractors = [
+            ('PDF', 'src.ingestion.extractors.pdf', 'PDFExtractor'),
+            ('HTML', 'src.ingestion.extractors.html', 'HTMLExtractor'),
+            ('DOCX', 'src.ingestion.extractors.docx', 'DOCXExtractor'),
+            ('XML', 'src.ingestion.extractors.xml', 'XMLExtractor'),
+            ('LaTeX', 'src.ingestion.extractors.latex', 'LaTeXExtractor'),
+        ]
+        
+        loaded_count = 0
+        for name, module_path, class_name in fallback_extractors:
+            try:
+                # Dynamically import the module and class
+                module = __import__(module_path, fromlist=[class_name])
+                extractor_class = getattr(module, class_name)
+                
+                # Instantiate and register
+                extractor = extractor_class()
+                self.extractors.append(extractor)
+                loaded_count += 1
+                self.logger.info(f"Loaded built-in {name} extractor via fallback")
+                
+            except (ImportError, AttributeError) as e:
+                self.logger.warning(f"Could not load {name} extractor via fallback: {e}")
+        
+        if loaded_count > 0:
+            self.logger.info(f"Fallback loading completed: {loaded_count} extractors loaded")
+        else:
+            self.logger.error("No extractors could be loaded, even with fallback method")
     
     def register_extractor(self, extractor: BaseExtractor) -> None:
         """

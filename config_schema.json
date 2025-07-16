@@ -1,0 +1,426 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/supersonic-electronic/AI/config_schema.json",
+  "title": "AI Knowledge Graph Configuration Schema",
+  "description": "Configuration schema for the AI Knowledge Graph system",
+  "type": "object",
+  "properties": {
+    "data_paths": {
+      "type": "object",
+      "description": "File system paths for data storage",
+      "properties": {
+        "source_directory": {
+          "type": "string",
+          "description": "Directory containing source documents",
+          "minLength": 1
+        },
+        "output_directory": {
+          "type": "string", 
+          "description": "Directory for processed output",
+          "minLength": 1
+        },
+        "chunks_directory": {
+          "type": "string",
+          "description": "Directory for text chunks",
+          "minLength": 1
+        },
+        "cache_directory": {
+          "type": "string",
+          "description": "Directory for cached data",
+          "minLength": 1
+        }
+      },
+      "required": ["source_directory", "output_directory", "chunks_directory"],
+      "additionalProperties": false
+    },
+    "processing": {
+      "type": "object",
+      "description": "Document processing configuration",
+      "properties": {
+        "chunk_size": {
+          "type": "integer",
+          "description": "Maximum size of text chunks in characters",
+          "minimum": 100,
+          "maximum": 10000,
+          "default": 1500
+        },
+        "chunk_overlap": {
+          "type": "integer",
+          "description": "Overlap between chunks in characters",
+          "minimum": 0,
+          "maximum": 500,
+          "default": 150
+        },
+        "max_workers": {
+          "type": "integer",
+          "description": "Maximum number of worker processes",
+          "minimum": 1,
+          "maximum": 32,
+          "default": 4
+        },
+        "batch_size": {
+          "type": "integer",
+          "description": "Batch size for processing",
+          "minimum": 1,
+          "maximum": 1000,
+          "default": 50
+        },
+        "timeout_seconds": {
+          "type": "integer",
+          "description": "Processing timeout in seconds",
+          "minimum": 30,
+          "maximum": 3600,
+          "default": 300
+        }
+      },
+      "additionalProperties": false
+    },
+    "extractors": {
+      "type": "object",
+      "description": "Document extractor configurations",
+      "properties": {
+        "pdf": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "default": true
+            },
+            "use_ocr": {
+              "type": "boolean",
+              "default": false
+            },
+            "preserve_layout": {
+              "type": "boolean",
+              "default": true
+            }
+          },
+          "additionalProperties": false
+        },
+        "html": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "default": true
+            },
+            "clean_html": {
+              "type": "boolean",
+              "default": true
+            },
+            "extract_links": {
+              "type": "boolean",
+              "default": false
+            }
+          },
+          "additionalProperties": false
+        },
+        "docx": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "default": true
+            },
+            "extract_images": {
+              "type": "boolean",
+              "default": false
+            }
+          },
+          "additionalProperties": false
+        },
+        "xml": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "default": true
+            },
+            "namespace_aware": {
+              "type": "boolean",
+              "default": true
+            }
+          },
+          "additionalProperties": false
+        },
+        "latex": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "default": true
+            },
+            "parse_math": {
+              "type": "boolean",
+              "default": true
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "math_detection": {
+      "type": "object",
+      "description": "Mathematical content detection settings",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Enable mathematical content detection",
+          "default": true
+        },
+        "confidence_threshold": {
+          "type": "number",
+          "description": "Minimum confidence threshold for math detection",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "default": 0.7
+        },
+        "use_improved_detector": {
+          "type": "boolean",
+          "description": "Use improved mathematical detector",
+          "default": true
+        },
+        "false_positive_reduction": {
+          "type": "boolean",
+          "description": "Enable false positive reduction",
+          "default": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "concept_extraction": {
+      "type": "object",
+      "description": "Concept extraction configuration",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": true
+        },
+        "min_frequency": {
+          "type": "integer",
+          "description": "Minimum frequency for concept inclusion",
+          "minimum": 1,
+          "default": 2
+        },
+        "max_concepts_per_chunk": {
+          "type": "integer",
+          "description": "Maximum concepts to extract per chunk",
+          "minimum": 1,
+          "maximum": 100,
+          "default": 20
+        },
+        "confidence_threshold": {
+          "type": "number",
+          "description": "Minimum confidence for concept extraction",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "default": 0.6
+        }
+      },
+      "additionalProperties": false
+    },
+    "external_knowledge": {
+      "type": "object",
+      "description": "External knowledge base integration",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": false
+        },
+        "dbpedia": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "default": false
+            },
+            "endpoint": {
+              "type": "string",
+              "format": "uri",
+              "default": "https://dbpedia.org/sparql"
+            },
+            "timeout": {
+              "type": "integer",
+              "minimum": 5,
+              "maximum": 60,
+              "default": 30
+            }
+          },
+          "additionalProperties": false
+        },
+        "wikidata": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "default": false
+            },
+            "endpoint": {
+              "type": "string",
+              "format": "uri",
+              "default": "https://query.wikidata.org/sparql"
+            },
+            "timeout": {
+              "type": "integer",
+              "minimum": 5,
+              "maximum": 60,
+              "default": 30
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "vector_store": {
+      "type": "object",
+      "description": "Vector store configuration",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["chroma", "pinecone", "local"],
+          "default": "chroma"
+        },
+        "embedding_model": {
+          "type": "string",
+          "description": "Embedding model to use",
+          "default": "sentence-transformers/all-MiniLM-L6-v2"
+        },
+        "dimension": {
+          "type": "integer",
+          "description": "Vector dimension",
+          "minimum": 128,
+          "maximum": 4096,
+          "default": 384
+        },
+        "similarity_threshold": {
+          "type": "number",
+          "description": "Similarity threshold for retrieval",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "default": 0.7
+        }
+      },
+      "additionalProperties": false
+    },
+    "graph_database": {
+      "type": "object",
+      "description": "Graph database configuration",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["neo4j", "memory"],
+          "default": "memory"
+        },
+        "uri": {
+          "type": "string",
+          "description": "Database connection URI"
+        },
+        "username": {
+          "type": "string",
+          "description": "Database username"
+        },
+        "password": {
+          "type": "string",
+          "description": "Database password"
+        },
+        "database": {
+          "type": "string",
+          "description": "Database name",
+          "default": "neo4j"
+        }
+      },
+      "additionalProperties": false
+    },
+    "web_interface": {
+      "type": "object",
+      "description": "Web interface configuration",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": true
+        },
+        "host": {
+          "type": "string",
+          "description": "Web server host",
+          "default": "127.0.0.1"
+        },
+        "port": {
+          "type": "integer",
+          "description": "Web server port",
+          "minimum": 1,
+          "maximum": 65535,
+          "default": 8000
+        },
+        "debug": {
+          "type": "boolean",
+          "description": "Enable debug mode",
+          "default": false
+        },
+        "cache_ttl": {
+          "type": "integer",
+          "description": "Cache TTL in seconds",
+          "minimum": 60,
+          "maximum": 3600,
+          "default": 300
+        }
+      },
+      "additionalProperties": false
+    },
+    "logging": {
+      "type": "object",
+      "description": "Logging configuration",
+      "properties": {
+        "level": {
+          "type": "string",
+          "enum": ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
+          "default": "INFO"
+        },
+        "format": {
+          "type": "string",
+          "description": "Log message format",
+          "default": "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+        },
+        "file": {
+          "type": "string",
+          "description": "Log file path"
+        },
+        "max_size": {
+          "type": "string",
+          "description": "Maximum log file size (e.g., '10MB')",
+          "default": "10MB"
+        },
+        "backup_count": {
+          "type": "integer",
+          "description": "Number of backup log files",
+          "minimum": 0,
+          "maximum": 10,
+          "default": 3
+        }
+      },
+      "additionalProperties": false
+    },
+    "api_keys": {
+      "type": "object",
+      "description": "API keys for external services",
+      "properties": {
+        "openai": {
+          "type": "string",
+          "description": "OpenAI API key"
+        },
+        "mathpix": {
+          "type": "string",
+          "description": "Mathpix API key"
+        },
+        "pinecone": {
+          "type": "string",
+          "description": "Pinecone API key"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "required": ["data_paths"],
+  "additionalProperties": false
+}
