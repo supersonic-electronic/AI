@@ -518,8 +518,8 @@ async def enrich_concepts_with_dbpedia_old(concepts: Dict[str, Any], manager: Ex
             external_source = enriched_concept.properties.get('external_source')
             
             # Check for dual source enrichment
-            has_dbpedia = external_source == 'dbpedia' or enriched_concept.properties.get('dbpedia_id')
-            has_wikidata = external_source == 'wikidata' or enriched_concept.properties.get('wikidata_id')
+            has_dbpedia = external_source == 'dbpedia' or bool(enriched_concept.properties.get('dbpedia_id'))
+            has_wikidata = external_source == 'wikidata' or bool(enriched_concept.properties.get('wikidata_id'))
             
             if external_source in ['dbpedia', 'wikidata'] or has_dbpedia or has_wikidata:
                 logging.debug(f"Enriching concept '{enriched_concept.name}' with external data (DBpedia: {has_dbpedia}, Wikidata: {has_wikidata})")
