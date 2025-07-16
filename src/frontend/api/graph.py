@@ -661,8 +661,11 @@ def convert_to_cytoscape_format(graph_data: Dict[str, Any]) -> Dict[str, Any]:
                 "external_comments": concept.get("external_comments", ""),
                 "external_redirect_labels": concept.get("external_redirect_labels", []),
                 
-                # Wikidata-specific semantic metadata
+                # External enrichment badges
+                "dbpedia_enriched": concept.get("dbpedia_enriched", False),
                 "wikidata_enriched": concept.get("wikidata_enriched", False),
+                
+                # Wikidata-specific semantic metadata
                 "wikidata_instance_of": concept.get("wikidata_instance_of", []),
                 "wikidata_subclass_of": concept.get("wikidata_subclass_of", []),
                 
