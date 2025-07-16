@@ -14,7 +14,9 @@ from fastapi import APIRouter, HTTPException, Depends, Request, Query
 from pydantic import BaseModel
 
 from src.settings import Settings
-from .graph import load_knowledge_graph, get_settings, get_cached_data, set_cached_data
+from src.knowledge.external_ontologies import get_external_ontology_manager
+from src.knowledge.concept_cache import get_concept_cache
+from .graph import load_knowledge_graph, get_settings, get_cached_data, set_cached_data, enrich_concepts_with_dbpedia_old
 
 
 # Response models
@@ -27,6 +29,29 @@ class ConceptResponse(BaseModel):
     confidence: float
     context: str
     source_docs: List[str]
+    
+    # Enhanced metadata fields
+    description: Optional[str] = None
+    definition: Optional[str] = None
+    notation: Optional[str] = None
+    latex: Optional[str] = None
+    examples: List[str] = []
+    related_formulas: List[str] = []
+    applications: List[str] = []
+    prerequisites: List[str] = []
+    complexity_level: Optional[str] = None
+    domain: Optional[str] = None
+    keywords: List[str] = []
+    external_links: Dict[str, str] = {}
+    created_at: Optional[str] = None
+    updated_at: Optional[str] = None
+    
+    # External enrichment fields
+    external_id: Optional[str] = None
+    dbpedia_enriched: Optional[bool] = None
+    wikidata_enriched: Optional[bool] = None
+    dbpedia_uri: Optional[str] = None
+    external_source: Optional[str] = None
 
 
 class ConceptNeighborsResponse(BaseModel):
@@ -107,16 +132,45 @@ async def get_concepts(
         Paginated list of concepts
     """
     
-    # Create cache key based on parameters
+    # Create cache key based on parameters  
     cache_key = f"concepts_page_{page}_per_{per_page}_type_{concept_type}"
-    cached_data = get_cached_data(cache_key, settings.web_cache_ttl)
     
+    # DISABLE CACHE to ensure enrichment is applied
+    cached_data = None  # Force no cache
     if cached_data:
         return cached_data
     
     # Load graph data
     graph_data = load_knowledge_graph()
     concepts = graph_data.get("concepts", {})
+    
+    # Apply enrichment if enabled
+    auto_enrich = getattr(settings, 'dbpedia_auto_enrich', True)
+    enable_dbpedia = getattr(settings, 'enable_dbpedia', True)
+    logging.info(f"Concepts API enrichment check: auto_enrich={auto_enrich}, enable_dbpedia={enable_dbpedia}")
+    print(f"DEBUG: Concepts API enrichment check: auto_enrich={auto_enrich}, enable_dbpedia={enable_dbpedia}")
+    
+    if auto_enrich and enable_dbpedia:
+        try:
+            logging.info(f"Starting enrichment for {len(concepts)} concepts in concepts API")
+            print(f"DEBUG: Starting enrichment for {len(concepts)} concepts in concepts API")
+            cache = get_concept_cache(settings)
+            manager = get_external_ontology_manager(settings, cache)
+            concepts = await enrich_concepts_with_dbpedia_old(concepts, manager)
+            print(f"DEBUG: Enrichment completed")
+            
+            # Count enriched concepts
+            enriched_count = sum(1 for c in concepts.values() if c.get('dbpedia_enriched', False) or c.get('wikidata_enriched', False))
+            logging.info(f"Concepts API enrichment complete: {enriched_count}/{len(concepts)} concepts enriched")
+        except Exception as e:
+            logging.error(f"Failed to apply enrichment to concepts API: {e}")
+            import traceback
+            logging.error(traceback.format_exc())
+            print(f"ERROR: Concepts API enrichment failed: {e}")
+            print(f"Traceback: {traceback.format_exc()}")
+            # Continue with non-enriched concepts
+    else:
+        logging.info("Concepts API enrichment disabled or not configured")
     
     # Convert to list and filter
     concept_list = []
@@ -133,6 +187,29 @@ async def get_concepts(
         concept_data.setdefault("frequency", 0)
         concept_data.setdefault("context", "")
         concept_data.setdefault("source_docs", [])
+        
+        # Enhanced metadata fields with defaults
+        concept_data.setdefault("description", "")
+        concept_data.setdefault("definition", "")
+        concept_data.setdefault("notation", "")
+        concept_data.setdefault("latex", "")
+        concept_data.setdefault("examples", [])
+        concept_data.setdefault("related_formulas", [])
+        concept_data.setdefault("applications", [])
+        concept_data.setdefault("prerequisites", [])
+        concept_data.setdefault("complexity_level", "")
+        concept_data.setdefault("domain", "")
+        concept_data.setdefault("keywords", [])
+        concept_data.setdefault("external_links", {})
+        concept_data.setdefault("created_at", "")
+        concept_data.setdefault("updated_at", "")
+        
+        # External enrichment fields with defaults
+        concept_data.setdefault("external_id", "")
+        concept_data.setdefault("dbpedia_enriched", False)
+        concept_data.setdefault("wikidata_enriched", False)
+        concept_data.setdefault("dbpedia_uri", "")
+        concept_data.setdefault("external_source", "local")
         concept_list.append(concept_data)
     
     # Sort by frequency (descending) then by name
@@ -181,7 +258,19 @@ async def get_concept(
     
     # Load graph data
     graph_data = load_knowledge_graph()
-    concept = find_concept_by_id(graph_data, concept_id)
+    concepts = graph_data.get("concepts", {})
+    
+    # Apply enrichment if enabled
+    if getattr(settings, 'dbpedia_auto_enrich', True) and getattr(settings, 'enable_dbpedia', True):
+        try:
+            cache = get_concept_cache(settings)
+            manager = get_external_ontology_manager(settings, cache)
+            concepts = await enrich_concepts_with_dbpedia_old(concepts, manager)
+            logging.info(f"Applied enrichment to concepts for individual concept API")
+        except Exception as e:
+            logging.warning(f"Failed to apply enrichment to individual concept API: {e}")
+    
+    concept = concepts.get(concept_id)
     
     if not concept:
         raise HTTPException(status_code=404, detail=f"Concept {concept_id} not found")
@@ -197,6 +286,29 @@ async def get_concept(
     concept_data.setdefault("confidence", 1.0)
     concept_data.setdefault("context", "")
     concept_data.setdefault("source_docs", [])
+    
+    # Enhanced metadata fields with defaults
+    concept_data.setdefault("description", "")
+    concept_data.setdefault("definition", "")
+    concept_data.setdefault("notation", "")
+    concept_data.setdefault("latex", "")
+    concept_data.setdefault("examples", [])
+    concept_data.setdefault("related_formulas", [])
+    concept_data.setdefault("applications", [])
+    concept_data.setdefault("prerequisites", [])
+    concept_data.setdefault("complexity_level", "")
+    concept_data.setdefault("domain", "")
+    concept_data.setdefault("keywords", [])
+    concept_data.setdefault("external_links", {})
+    concept_data.setdefault("created_at", "")
+    concept_data.setdefault("updated_at", "")
+    
+    # External enrichment fields with defaults
+    concept_data.setdefault("external_id", "")
+    concept_data.setdefault("dbpedia_enriched", False)
+    concept_data.setdefault("wikidata_enriched", False)
+    concept_data.setdefault("dbpedia_uri", "")
+    concept_data.setdefault("external_source", "local")
     
     # Cache the response
     set_cached_data(cache_key, concept_data)
@@ -228,7 +340,19 @@ async def get_concept_neighbors(
     
     # Load graph data
     graph_data = load_knowledge_graph()
-    concept = find_concept_by_id(graph_data, concept_id)
+    concepts = graph_data.get("concepts", {})
+    
+    # Apply enrichment if enabled
+    if getattr(settings, 'dbpedia_auto_enrich', True) and getattr(settings, 'enable_dbpedia', True):
+        try:
+            cache = get_concept_cache(settings)
+            manager = get_external_ontology_manager(settings, cache)
+            concepts = await enrich_concepts_with_dbpedia_old(concepts, manager)
+            logging.info(f"Applied enrichment to concepts for neighbors API")
+        except Exception as e:
+            logging.warning(f"Failed to apply enrichment to neighbors API: {e}")
+    
+    concept = concepts.get(concept_id)
     
     if not concept:
         raise HTTPException(status_code=404, detail=f"Concept {concept_id} not found")
@@ -242,6 +366,29 @@ async def get_concept_neighbors(
     concept_data.setdefault("confidence", 1.0)
     concept_data.setdefault("context", "")
     concept_data.setdefault("source_docs", [])
+    
+    # Enhanced metadata fields with defaults
+    concept_data.setdefault("description", "")
+    concept_data.setdefault("definition", "")
+    concept_data.setdefault("notation", "")
+    concept_data.setdefault("latex", "")
+    concept_data.setdefault("examples", [])
+    concept_data.setdefault("related_formulas", [])
+    concept_data.setdefault("applications", [])
+    concept_data.setdefault("prerequisites", [])
+    concept_data.setdefault("complexity_level", "")
+    concept_data.setdefault("domain", "")
+    concept_data.setdefault("keywords", [])
+    concept_data.setdefault("external_links", {})
+    concept_data.setdefault("created_at", "")
+    concept_data.setdefault("updated_at", "")
+    
+    # External enrichment fields with defaults
+    concept_data.setdefault("external_id", "")
+    concept_data.setdefault("dbpedia_enriched", False)
+    concept_data.setdefault("wikidata_enriched", False)
+    concept_data.setdefault("dbpedia_uri", "")
+    concept_data.setdefault("external_source", "local")
     
     # Get related concepts and relationships
     relationships = get_concept_relationships(graph_data, concept_id)

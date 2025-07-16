@@ -195,6 +195,573 @@ class KnowledgeGraphApp {
         document.addEventListener('click', (event) => {
             this.closeDropdowns(event);
         });
+        
+        // Enhanced tooltip functionality (FR4)
+        this.setupTooltips();
+    }
+    
+    /**
+     * Setup enhanced graph node tooltips (FR4: Interactive Graph Node Tooltips)
+     */
+    setupTooltips() {
+        // Create tooltip element
+        this.tooltip = document.createElement('div');
+        this.tooltip.className = 'enhanced-tooltip';
+        document.body.appendChild(this.tooltip);
+        
+        // Tooltip state management
+        this.tooltipState = {
+            visible: false,
+            timeout: null,
+            cache: new Map(),
+            currentNode: null
+        };
+        
+        // Enhanced hover events with delay (FR4.1)
+        this.graphManager.addEventListener('onNodeHover', (node) => {
+            this.handleNodeHover(node);
+        });
+        
+        this.graphManager.addEventListener('onNodeUnhover', () => {
+            this.handleNodeUnhover();
+        });
+        
+        // Hide tooltip on graph pan/zoom for performance (FR4.3)
+        if (this.graphManager.cy) {
+            this.graphManager.cy.on('pan zoom', () => {
+                this.hideTooltip();
+            });
+        }
+    }
+    
+    /**
+     * Handle node hover with 300ms delay (FR4.1)
+     */
+    handleNodeHover(node) {
+        // Clear any existing timeout
+        if (this.tooltipState.timeout) {
+            clearTimeout(this.tooltipState.timeout);
+        }
+        
+        // Set 300ms delay before showing tooltip
+        this.tooltipState.timeout = setTimeout(() => {
+            this.showEnhancedTooltip(node);
+        }, 300);
+        
+        this.tooltipState.currentNode = node;
+    }
+    
+    /**
+     * Handle node unhover
+     */
+    handleNodeUnhover() {
+        // Clear timeout to prevent showing tooltip
+        if (this.tooltipState.timeout) {
+            clearTimeout(this.tooltipState.timeout);
+            this.tooltipState.timeout = null;
+        }
+        
+        // Hide tooltip immediately
+        this.hideTooltip();
+        this.tooltipState.currentNode = null;
+    }
+    
+    /**
+     * Show enhanced tooltip with metadata (FR4.1, FR4.2)
+     */
+    async showEnhancedTooltip(node) {
+        try {
+            const nodeId = node.id();
+            
+            // Check cache first (FR4.3)
+            let tooltipData = this.tooltipState.cache.get(nodeId);
+            
+            if (!tooltipData) {
+                // Lazy-load tooltip content (FR4.3)
+                tooltipData = await this.loadTooltipData(node);
+                this.tooltipState.cache.set(nodeId, tooltipData);
+                
+                // Limit cache size to prevent memory issues
+                if (this.tooltipState.cache.size > 100) {
+                    const firstKey = this.tooltipState.cache.keys().next().value;
+                    this.tooltipState.cache.delete(firstKey);
+                }
+            }
+            
+            // Generate tooltip HTML
+            const tooltipHTML = this.generateTooltipHTML(tooltipData);
+            this.tooltip.innerHTML = tooltipHTML;
+            
+            // Position tooltip responsively (FR4.2)
+            this.positionTooltip(node);
+            
+            // Show tooltip
+            this.tooltip.classList.add('visible');
+            this.tooltipState.visible = true;
+            
+            // Render LaTeX if present (FR4.2)
+            this.renderTooltipMath();
+            
+        } catch (error) {
+            console.warn('Failed to show tooltip:', error);
+        }
+    }
+    
+    /**
+     * Load tooltip data for a node (FR4.3 - lazy loading)
+     */
+    async loadTooltipData(node) {
+        const nodeData = node.data();
+        
+        // Extract enhanced metadata including DBpedia fields
+        const tooltipData = {
+            name: nodeData.name || 'Unknown',
+            type: nodeData.type || 'unknown',
+            complexity_level: nodeData.complexity_level || 'intermediate',
+            domain: nodeData.domain || 'finance',
+            prerequisites: nodeData.prerequisites || [],
+            confidence: nodeData.confidence || 1.0,
+            frequency: nodeData.frequency || 0,
+            latex: nodeData.latex || null,
+            description: nodeData.description || null,
+            // DBpedia-specific fields
+            dbpedia_enriched: nodeData.dbpedia_enriched || false,
+            dbpedia_uri: nodeData.dbpedia_uri || null,
+            dbpedia_confidence: nodeData.dbpedia_confidence || 0,
+            external_source: nodeData.external_source || 'local',
+            aliases: nodeData.aliases || [],
+            properties: nodeData.properties || {},
+            // Enhanced external metadata fields
+            categories: (nodeData.properties && nodeData.properties.categories) || [],
+            types: (nodeData.properties && nodeData.properties.types) || [],
+            examples: nodeData.examples || [],
+            applications: nodeData.applications || [],
+            related_formulas: nodeData.related_formulas || [],
+            related_external_concepts: (nodeData.properties && nodeData.properties.related_external_concepts) || [],
+            
+            // New enhanced metadata from API
+            external_categories: nodeData.external_categories || [],
+            external_types: nodeData.external_types || [],
+            external_type_names: nodeData.external_type_names || [],
+            external_urls: nodeData.external_urls || {},
+            external_comments: nodeData.external_comments || '',
+            external_redirect_labels: nodeData.external_redirect_labels || [],
+            
+            // Wikidata enrichment
+            wikidata_enriched: nodeData.wikidata_enriched || false,
+            wikidata_instance_of: nodeData.wikidata_instance_of || [],
+            wikidata_subclass_of: nodeData.wikidata_subclass_of || [],
+            
+            // Source document context
+            source_documents: nodeData.source_documents || [],
+            source_title: nodeData.source_title || '',
+            source_authors: nodeData.source_authors || [],
+            source_publication_year: nodeData.source_publication_year || '',
+            source_context_snippet: nodeData.source_context_snippet || '',
+            primary_source_doc: nodeData.primary_source_doc || '',
+            concept_frequency: nodeData.concept_frequency || 0,
+            
+            // Legacy source document info
+            source_document: nodeData.source_document || null,
+            source_page: nodeData.source_page || null,
+            context: nodeData.context || null
+        };
+        
+        return tooltipData;
+    }
+    
+    /**
+     * Generate tooltip HTML content (FR4.1, FR4.2) with DBpedia integration
+     */
+    generateTooltipHTML(data) {
+        const { 
+            name, type, complexity_level, domain, prerequisites, confidence, frequency, latex, description,
+            dbpedia_enriched, dbpedia_uri, dbpedia_confidence, external_source, aliases,
+            source_document, source_page, context,
+            // Enhanced metadata
+            wikidata_enriched, external_categories, external_urls, source_title, source_authors, 
+            source_publication_year, primary_source_doc, concept_frequency, external_comments
+        } = data;
+        
+        // Dual source badges
+        let sourceBadges = '';
+        if (dbpedia_enriched && wikidata_enriched) {
+            sourceBadges = '<div class="tooltip-source-badge enriched-badge">DBpedia</div><div class="tooltip-source-badge enriched-badge">Wikidata</div>';
+        } else if (dbpedia_enriched) {
+            sourceBadges = '<div class="tooltip-source-badge enriched-badge">DBpedia Enriched</div>';
+        } else if (wikidata_enriched) {
+            sourceBadges = '<div class="tooltip-source-badge enriched-badge">Wikidata Enriched</div>';
+        } else {
+            sourceBadges = '<div class="tooltip-source-badge local-badge">Local Document</div>';
+        }
+        
+        return `
+            <div class="tooltip-header">
+                <div class="tooltip-title">${this.escapeHtml(name)}</div>
+                <div class="tooltip-type">${this.escapeHtml(type)}</div>
+                ${sourceBadges}
+            </div>
+            <div class="tooltip-content">
+                <div class="tooltip-row">
+                    <span class="tooltip-label">Complexity:</span>
+                    <span class="tooltip-value complexity-${complexity_level}">${complexity_level}</span>
+                </div>
+                <div class="tooltip-row">
+                    <span class="tooltip-label">Domain:</span>
+                    <span class="tooltip-value">${this.escapeHtml(domain)}</span>
+                </div>
+                ${confidence < 1.0 ? `
+                <div class="tooltip-row">
+                    <span class="tooltip-label">Confidence:</span>
+                    <span class="tooltip-value">${(confidence * 100).toFixed(0)}%</span>
+                </div>` : ''}
+                ${frequency > 0 ? `
+                <div class="tooltip-row">
+                    <span class="tooltip-label">Frequency:</span>
+                    <span class="tooltip-value">${frequency}</span>
+                </div>` : ''}
+                ${prerequisites.length > 0 ? `
+                <div class="tooltip-row">
+                    <span class="tooltip-label">Prerequisites:</span>
+                    <span class="tooltip-value">${prerequisites.slice(0, 3).map(p => this.escapeHtml(p)).join(', ')}${prerequisites.length > 3 ? '...' : ''}</span>
+                </div>` : ''}
+                
+                ${this.generateDBpediaSection(data)}
+                ${this.generateLocalSourceSection(data)}
+                
+                ${latex ? `
+                <div class="tooltip-latex">
+                    <div class="tooltip-label">Formula:</div>
+                    <div class="tooltip-math">\\(${latex}\\)</div>
+                </div>` : ''}
+                ${description ? `
+                <div class="tooltip-description">
+                    ${this.escapeHtml(description.substring(0, 150))}${description.length > 150 ? '...' : ''}
+                </div>` : ''}
+            </div>
+        `;
+    }
+    
+    /**
+     * Generate DBpedia-specific section for tooltip
+     */
+    generateDBpediaSection(data) {
+        const { dbpedia_enriched, dbpedia_uri, dbpedia_confidence, external_source, aliases, 
+                categories, types, examples, applications, related_formulas, related_external_concepts,
+                // Enhanced metadata
+                wikidata_enriched, external_categories, external_urls, external_comments,
+                wikidata_instance_of, wikidata_subclass_of } = data;
+        
+        if (!dbpedia_enriched && external_source !== 'dbpedia') {
+            return '';
+        }
+        
+        let section = '<div class="tooltip-section tooltip-dbpedia-section">';
+        
+        if (dbpedia_uri) {
+            section += `
+                <div class="tooltip-row">
+                    <span class="tooltip-label">DBpedia URI:</span>
+                    <span class="tooltip-value">
+                        <a href="${dbpedia_uri}" target="_blank" rel="noopener noreferrer" class="tooltip-link">
+                            View on DBpedia ↗
+                        </a>
+                    </span>
+                </div>`;
+        }
+        
+        if (dbpedia_confidence > 0) {
+            section += `
+                <div class="tooltip-row">
+                    <span class="tooltip-label">DBpedia Confidence:</span>
+                    <span class="tooltip-value">${(dbpedia_confidence * 100).toFixed(0)}%</span>
+                </div>`;
+        }
+        
+        if (aliases && aliases.length > 0) {
+            section += `
+                <div class="tooltip-row">
+                    <span class="tooltip-label">Aliases:</span>
+                    <span class="tooltip-value">${aliases.slice(0, 3).map(a => this.escapeHtml(a)).join(', ')}${aliases.length > 3 ? '...' : ''}</span>
+                </div>`;
+        }
+        
+        // Enhanced metadata fields
+        if (categories && categories.length > 0) {
+            const categoryList = categories.slice(0, 4).map(cat => {
+                // Extract readable category name from URI
+                const categoryName = cat.includes('/') ? cat.split('/').pop().replace(/_/g, ' ') : cat;
+                return this.escapeHtml(categoryName);
+            }).join(', ');
+            section += `
+                <div class="tooltip-row">
+                    <span class="tooltip-label">Categories:</span>
+                    <span class="tooltip-value">${categoryList}${categories.length > 4 ? '...' : ''}</span>
+                </div>`;
+        }
+        
+        if (types && types.length > 0) {
+            const typeList = types.slice(0, 3).map(type => {
+                const typeName = type.includes('/') ? type.split('/').pop().replace(/_/g, ' ') : type;
+                return this.escapeHtml(typeName);
+            }).join(', ');
+            section += `
+                <div class="tooltip-row">
+                    <span class="tooltip-label">Types:</span>
+                    <span class="tooltip-value">${typeList}${types.length > 3 ? '...' : ''}</span>
+                </div>`;
+        }
+        
+        if (examples && examples.length > 0) {
+            section += `
+                <div class="tooltip-row">
+                    <span class="tooltip-label">Examples:</span>
+                    <span class="tooltip-value">${examples.slice(0, 2).map(ex => this.escapeHtml(ex)).join('; ')}${examples.length > 2 ? '...' : ''}</span>
+                </div>`;
+        }
+        
+        if (applications && applications.length > 0) {
+            section += `
+                <div class="tooltip-row">
+                    <span class="tooltip-label">Applications:</span>
+                    <span class="tooltip-value">${applications.slice(0, 2).map(app => this.escapeHtml(app)).join(', ')}${applications.length > 2 ? '...' : ''}</span>
+                </div>`;
+        }
+        
+        if (related_formulas && related_formulas.length > 0) {
+            section += `
+                <div class="tooltip-row">
+                    <span class="tooltip-label">Related Formulas:</span>
+                    <span class="tooltip-value">${related_formulas.slice(0, 2).map(formula => this.escapeHtml(formula)).join(', ')}${related_formulas.length > 2 ? '...' : ''}</span>
+                </div>`;
+        }
+        
+        if (related_external_concepts && related_external_concepts.length > 0) {
+            const relatedList = related_external_concepts.slice(0, 3).map(concept => {
+                const conceptName = concept.includes('/') ? concept.split('/').pop().replace(/_/g, ' ') : concept;
+                return `<span class="related-concept">${this.escapeHtml(conceptName)}</span>`;
+            }).join(', ');
+            section += `
+                <div class="tooltip-row">
+                    <span class="tooltip-label">Related Concepts:</span>
+                    <span class="tooltip-value">${relatedList}${related_external_concepts.length > 3 ? '...' : ''}</span>
+                </div>`;
+        }
+        
+        // Enhanced external metadata from new API fields
+        if (external_categories && external_categories.length > 0) {
+            const categoryList = external_categories.slice(0, 4).map(cat => {
+                const categoryName = cat.includes('/') ? cat.split('/').pop().replace(/_/g, ' ') : cat;
+                return this.escapeHtml(categoryName);
+            }).join(', ');
+            section += `
+                <div class="tooltip-row">
+                    <span class="tooltip-label">External Categories:</span>
+                    <span class="tooltip-value">${categoryList}${external_categories.length > 4 ? '...' : ''}</span>
+                </div>`;
+        }
+        
+        // External URLs section
+        if (external_urls && Object.keys(external_urls).length > 0) {
+            const links = [];
+            if (external_urls.dbpedia) {
+                links.push(`<a href="${external_urls.dbpedia}" target="_blank" class="tooltip-link">DBpedia ↗</a>`);
+            }
+            if (external_urls.wikidata) {
+                links.push(`<a href="${external_urls.wikidata}" target="_blank" class="tooltip-link">Wikidata ↗</a>`);
+            }
+            if (links.length > 0) {
+                section += `
+                    <div class="tooltip-row">
+                        <span class="tooltip-label">External Links:</span>
+                        <span class="tooltip-value">${links.join(' | ')}</span>
+                    </div>`;
+            }
+        }
+        
+        // Wikidata semantic metadata
+        if (wikidata_enriched && wikidata_instance_of && wikidata_instance_of.length > 0) {
+            section += `
+                <div class="tooltip-row">
+                    <span class="tooltip-label">Instance Of:</span>
+                    <span class="tooltip-value">${wikidata_instance_of.slice(0, 3).map(i => this.escapeHtml(i)).join(', ')}</span>
+                </div>`;
+        }
+        
+        if (external_comments) {
+            section += `
+                <div class="tooltip-row">
+                    <span class="tooltip-label">Description:</span>
+                    <span class="tooltip-value">${this.escapeHtml(external_comments.substring(0, 100))}${external_comments.length > 100 ? '...' : ''}</span>
+                </div>`;
+        }
+        
+        section += '</div>';
+        return section;
+    }
+    
+    /**
+     * Generate local source section for tooltip
+     */
+    generateLocalSourceSection(data) {
+        const { external_source, source_document, source_page, context,
+                // Enhanced source document metadata
+                source_title, source_authors, source_publication_year, primary_source_doc, 
+                concept_frequency, source_context_snippet } = data;
+        
+        // Show local source section if we have any source document metadata
+        if (external_source === 'dbpedia' || (!source_document && !context && !source_title && !primary_source_doc)) {
+            return '';
+        }
+        
+        let section = '<div class="tooltip-section tooltip-local-section">';
+        
+        if (source_document) {
+            section += `
+                <div class="tooltip-row">
+                    <span class="tooltip-label">Document:</span>
+                    <span class="tooltip-value">${this.escapeHtml(source_document)}</span>
+                </div>`;
+        }
+        
+        if (source_page) {
+            section += `
+                <div class="tooltip-row">
+                    <span class="tooltip-label">Page:</span>
+                    <span class="tooltip-value">${source_page}</span>
+                </div>`;
+        }
+        
+        // Enhanced source document metadata
+        if (source_title) {
+            section += `
+                <div class="tooltip-row">
+                    <span class="tooltip-label">Title:</span>
+                    <span class="tooltip-value">${this.escapeHtml(source_title)}</span>
+                </div>`;
+        }
+        
+        if (source_authors && source_authors.length > 0) {
+            section += `
+                <div class="tooltip-row">
+                    <span class="tooltip-label">Authors:</span>
+                    <span class="tooltip-value">${source_authors.slice(0, 5).map(a => this.escapeHtml(a)).join(', ')}${source_authors.length > 5 ? ` (+${source_authors.length - 5} more)` : ''}</span>
+                </div>`;
+        }
+        
+        if (source_publication_year) {
+            section += `
+                <div class="tooltip-row">
+                    <span class="tooltip-label">Year:</span>
+                    <span class="tooltip-value">${source_publication_year}</span>
+                </div>`;
+        }
+        
+        if (concept_frequency > 0) {
+            section += `
+                <div class="tooltip-row">
+                    <span class="tooltip-label">Frequency:</span>
+                    <span class="tooltip-value">${concept_frequency.toLocaleString()} occurrences</span>
+                </div>`;
+        }
+        
+        // Show multiple source documents if available
+        if (data.source_documents && data.source_documents.length > 1) {
+            const sourceList = data.source_documents.slice(0, 3).map(doc => {
+                // Clean up filename for display
+                const cleanName = doc.replace('.txt', '').replace('_', ' ');
+                return this.escapeHtml(cleanName);
+            }).join(', ');
+            section += `
+                <div class="tooltip-row">
+                    <span class="tooltip-label">Sources:</span>
+                    <span class="tooltip-value">${sourceList}${data.source_documents.length > 3 ? ` (+${data.source_documents.length - 3} more)` : ''}</span>
+                </div>`;
+        }
+        
+        if (context) {
+            section += `
+                <div class="tooltip-context">
+                    <div class="tooltip-label">Context:</div>
+                    <div class="tooltip-context-text">${this.escapeHtml(context.substring(0, 100))}${context.length > 100 ? '...' : ''}</div>
+                </div>`;
+        }
+        
+        section += '</div>';
+        return section;
+    }
+    
+    /**
+     * Position tooltip responsively to avoid viewport overflow (FR4.2)
+     */
+    positionTooltip(node) {
+        const renderedNode = node.renderedBoundingBox();
+        const container = this.graphManager.cy.container();
+        const containerRect = container.getBoundingClientRect();
+        
+        // Calculate initial position (above and to the right of node)
+        let left = containerRect.left + renderedNode.x2 + 10;
+        let top = containerRect.top + renderedNode.y1 - 10;
+        
+        // Get tooltip dimensions
+        this.tooltip.style.visibility = 'hidden';
+        this.tooltip.style.display = 'block';
+        const tooltipRect = this.tooltip.getBoundingClientRect();
+        
+        // Adjust position to avoid viewport overflow
+        const viewportWidth = window.innerWidth;
+        const viewportHeight = window.innerHeight;
+        
+        // Horizontal overflow check
+        if (left + tooltipRect.width > viewportWidth) {
+            left = containerRect.left + renderedNode.x1 - tooltipRect.width - 10;
+        }
+        
+        // Vertical overflow check
+        if (top + tooltipRect.height > viewportHeight) {
+            top = containerRect.top + renderedNode.y2 + 10;
+        }
+        
+        // Ensure tooltip doesn't go off-screen
+        left = Math.max(5, Math.min(left, viewportWidth - tooltipRect.width - 5));
+        top = Math.max(5, Math.min(top, viewportHeight - tooltipRect.height - 5));
+        
+        // Apply position
+        this.tooltip.style.left = `${left}px`;
+        this.tooltip.style.top = `${top}px`;
+        this.tooltip.style.visibility = 'visible';
+    }
+    
+    /**
+     * Render LaTeX math in tooltip (FR4.2)
+     */
+    renderTooltipMath() {
+        if (window.MathJax && window.MathJax.typesetPromise) {
+            // Use MathJax 3.x API
+            window.MathJax.typesetPromise([this.tooltip]).catch((err) => {
+                console.warn('MathJax rendering failed:', err);
+            });
+        } else if (window.MathJax && window.MathJax.Hub) {
+            // Fallback for MathJax 2.x
+            window.MathJax.Hub.Queue(['Typeset', window.MathJax.Hub, this.tooltip]);
+        }
+    }
+    
+    /**
+     * Hide tooltip
+     */
+    hideTooltip() {
+        this.tooltip.classList.remove('visible');
+        this.tooltipState.visible = false;
+    }
+    
+    /**
+     * Escape HTML to prevent XSS
+     */
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
     }
 
     /**
@@ -483,14 +1050,14 @@ class KnowledgeGraphApp {
             // Show loading in panel
             this.elements.conceptDetails.innerHTML = '<div class="loading-text">Loading concept details...</div>';
             
-            // Fetch detailed concept information
-            const response = await fetch(`/api/concepts/${conceptId}/neighbors`);
+            // Fetch detailed concept information using the new API endpoint
+            const response = await fetch(`/api/concepts/${conceptId}`);
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
             
-            const data = await response.json();
-            this.renderConceptDetails(data);
+            const conceptData = await response.json();
+            this.renderConceptDetails(conceptData);
             
         } catch (error) {
             console.error('Failed to load concept details:', error);
@@ -501,82 +1068,198 @@ class KnowledgeGraphApp {
     /**
      * Render concept details in the panel
      */
-    renderConceptDetails(data) {
-        const concept = data.concept;
-        const neighbors = data.neighbors;
-        const relationships = data.relationships;
-        
+    renderConceptDetails(concept) {
+        // Build the enhanced concept details HTML with all new fields
         const html = `
             <div class="concept-detail-item">
                 <div class="detail-label">Name</div>
-                <div class="detail-value">${this.escapeHtml(concept.name)}</div>
+                <div class="detail-value concept-name">${this.escapeHtml(concept.name)}</div>
             </div>
             
             <div class="concept-detail-item">
                 <div class="detail-label">Type</div>
                 <div class="detail-value">
-                    <span class="concept-type-badge" style="background-color: ${this.getConceptColor(concept.type)}">${concept.type}</span>
+                    <span class="concept-type-badge" style="background-color: ${this.getConceptColor(concept.type)};">${concept.type}</span>
                 </div>
             </div>
             
+            ${concept.definition ? `
             <div class="concept-detail-item">
-                <div class="detail-label">Frequency</div>
-                <div class="detail-value">${concept.frequency || 0}</div>
+                <div class="detail-label">Definition</div>
+                <div class="detail-value tex2jax_process">${this.escapeHtml(concept.definition)}</div>
             </div>
+            ` : ''}
+            
+            ${concept.description ? `
+            <div class="concept-detail-item">
+                <div class="detail-label">Description</div>
+                <div class="detail-value tex2jax_process">${this.escapeHtml(concept.description)}</div>
+            </div>
+            ` : ''}
+            
+            ${concept.latex ? `
+            <div class="concept-detail-item">
+                <div class="detail-label">Mathematical Expression</div>
+                <div class="detail-value tex2jax_process math-expression">$$${concept.latex}$$</div>
+            </div>
+            ` : ''}
+            
+            ${concept.notation ? `
+            <div class="concept-detail-item">
+                <div class="detail-label">Notation</div>
+                <div class="detail-value tex2jax_process">${this.escapeHtml(concept.notation)}</div>
+            </div>
+            ` : ''}
+            
+            ${concept.related_formulas && concept.related_formulas.length > 0 ? `
+            <div class="concept-detail-item">
+                <div class="detail-label">Related Formulas</div>
+                <div class="detail-value">
+                    ${concept.related_formulas.map(formula => `
+                        <div class="formula-item tex2jax_process">$${formula}$</div>
+                    `).join('')}
+                </div>
+            </div>
+            ` : ''}
+            
+            ${concept.examples && concept.examples.length > 0 ? `
+            <div class="concept-detail-item">
+                <div class="detail-label">Examples</div>
+                <div class="detail-value">
+                    <ul class="concept-list">
+                        ${concept.examples.map(example => `<li class="tex2jax_process">${this.escapeHtml(example)}</li>`).join('')}
+                    </ul>
+                </div>
+            </div>
+            ` : ''}
+            
+            ${concept.applications && concept.applications.length > 0 ? `
+            <div class="concept-detail-item">
+                <div class="detail-label">Applications</div>
+                <div class="detail-value">
+                    <ul class="concept-list">
+                        ${concept.applications.map(app => `<li>${this.escapeHtml(app)}</li>`).join('')}
+                    </ul>
+                </div>
+            </div>
+            ` : ''}
+            
+            ${concept.prerequisites && concept.prerequisites.length > 0 ? `
+            <div class="concept-detail-item">
+                <div class="detail-label">Prerequisites</div>
+                <div class="detail-value">
+                    <div class="tag-container">
+                        ${concept.prerequisites.map(prereq => `<span class="concept-tag">${this.escapeHtml(prereq)}</span>`).join('')}
+                    </div>
+                </div>
+            </div>
+            ` : ''}
             
             <div class="concept-detail-item">
                 <div class="detail-label">Confidence</div>
                 <div class="detail-value">${(concept.confidence * 100).toFixed(1)}%</div>
             </div>
             
-            ${concept.context ? `
+            ${concept.complexity_level ? `
             <div class="concept-detail-item">
-                <div class="detail-label">Context</div>
-                <div class="detail-value">${this.escapeHtml(concept.context)}</div>
-            </div>
-            ` : ''}
-            
-            ${concept.source_docs && concept.source_docs.length > 0 ? `
-            <div class="concept-detail-item">
-                <div class="detail-label">Source Documents</div>
+                <div class="detail-label">Complexity Level</div>
                 <div class="detail-value">
-                    <ul class="source-docs-list">
-                        ${concept.source_docs.map(doc => `<li>${this.escapeHtml(doc)}</li>`).join('')}
-                    </ul>
+                    <span class="complexity-badge complexity-${concept.complexity_level}">${concept.complexity_level}</span>
                 </div>
             </div>
             ` : ''}
             
-            ${relationships.length > 0 ? `
+            ${concept.domain ? `
             <div class="concept-detail-item">
-                <div class="detail-label">Relationships (${relationships.length})</div>
+                <div class="detail-label">Domain</div>
                 <div class="detail-value">
-                    ${relationships.slice(0, 5).map(rel => `
-                        <div style="margin-bottom: 8px; padding: 8px; background: #f5f5f5; border-radius: 4px;">
-                            <strong>${rel.type}</strong> (${(rel.confidence * 100).toFixed(0)}%)
+                    <span class="domain-badge">${this.escapeHtml(concept.domain)}</span>
+                </div>
+            </div>
+            ` : ''}
+            
+            ${concept.keywords && concept.keywords.length > 0 ? `
+            <div class="concept-detail-item">
+                <div class="detail-label">Keywords</div>
+                <div class="detail-value">
+                    <div class="tag-container">
+                        ${concept.keywords.map(keyword => `<span class="keyword-tag">${this.escapeHtml(keyword)}</span>`).join('')}
+                    </div>
+                </div>
+            </div>
+            ` : ''}
+            
+            ${concept.external_links && Object.keys(concept.external_links).length > 0 ? `
+            <div class="concept-detail-item">
+                <div class="detail-label">External Links</div>
+                <div class="detail-value">
+                    ${Object.entries(concept.external_links).map(([source, url]) => `
+                        <div class="external-link">
+                            <a href="${this.escapeHtml(url)}" target="_blank" rel="noopener noreferrer">
+                                ${this.escapeHtml(source)} <span class="external-icon">↗</span>
+                            </a>
                         </div>
                     `).join('')}
-                    ${relationships.length > 5 ? `<div style="color: #666; font-size: 12px;">... and ${relationships.length - 5} more</div>` : ''}
                 </div>
             </div>
             ` : ''}
             
-            ${neighbors.length > 0 ? `
+            ${concept.related_concepts && concept.related_concepts.length > 0 ? `
             <div class="concept-detail-item">
-                <div class="detail-label">Related Concepts (${neighbors.length})</div>
+                <div class="detail-label">Related Concepts (${concept.related_concepts.length})</div>
                 <div class="detail-value">
-                    ${neighbors.slice(0, 8).map(neighbor => `
-                        <div style="margin-bottom: 6px; cursor: pointer; color: #2196F3;" onclick="app.selectConceptByName('${this.escapeHtml(neighbor.name)}')">
-                            ${this.escapeHtml(neighbor.name)} <small>(${neighbor.type})</small>
+                    ${concept.related_concepts.slice(0, 8).map(related => `
+                        <div class="related-concept" onclick="app.selectConceptByName('${this.escapeHtml(related.name)}')">
+                            <span class="related-name">${this.escapeHtml(related.name)}</span>
+                            <small class="related-type">(${related.type})</small>
+                            <small class="related-relationship">${related.relationship_type}</small>
                         </div>
                     `).join('')}
-                    ${neighbors.length > 8 ? `<div style="color: #666; font-size: 12px;">... and ${neighbors.length - 8} more</div>` : ''}
+                    ${concept.related_concepts.length > 8 ? `<div class="more-indicator">... and ${concept.related_concepts.length - 8} more</div>` : ''}
                 </div>
+            </div>
+            ` : ''}
+            
+            ${concept.source_document ? `
+            <div class="concept-detail-item">
+                <div class="detail-label">Source Document</div>
+                <div class="detail-value source-info">
+                    <div>${this.escapeHtml(concept.source_document)}</div>
+                    ${concept.source_page ? `<small>Page ${concept.source_page}</small>` : ''}
+                </div>
+            </div>
+            ` : ''}
+            
+            ${concept.created_at ? `
+            <div class="concept-detail-item">
+                <div class="detail-label">Created</div>
+                <div class="detail-value timestamp">${new Date(concept.created_at).toLocaleDateString()}</div>
             </div>
             ` : ''}
         `;
         
+        // Set the HTML content
         this.elements.conceptDetails.innerHTML = html;
+        
+        // Process LaTeX content with MathJax
+        this.processLatexContent();
+    }
+
+    /**
+     * Process LaTeX content with MathJax
+     */
+    processLatexContent() {
+        // Check if MathJax is available
+        if (typeof MathJax !== 'undefined' && MathJax.typesetPromise) {
+            // Process only the concept details panel to avoid reprocessing the entire page
+            MathJax.typesetPromise([this.elements.conceptDetails]).then(() => {
+                console.log('LaTeX content processed successfully');
+            }).catch((error) => {
+                console.error('MathJax processing failed:', error);
+            });
+        } else {
+            console.warn('MathJax not available for LaTeX rendering');
+        }
     }
 
     /**

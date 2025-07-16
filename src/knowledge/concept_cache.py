@@ -10,12 +10,45 @@ import logging
 import sqlite3
 import time
 from pathlib import Path
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 from contextlib import contextmanager
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass, asdict, is_dataclass
 from datetime import datetime, timedelta
 
 from src.settings import Settings
+
+
+def _serialize_value(value: Any) -> str:
+    """Serialize a value for storage, handling dataclasses properly."""
+    def custom_serializer(obj):
+        if is_dataclass(obj):
+            return {
+                '__dataclass__': obj.__class__.__module__ + '.' + obj.__class__.__qualname__,
+                '__data__': asdict(obj)
+            }
+        elif hasattr(obj, '__dict__'):
+            return obj.__dict__
+        return str(obj)
+    
+    return json.dumps(value, default=custom_serializer)
+
+
+def _deserialize_value(serialized: str) -> Any:
+    """Deserialize a value from storage, handling dataclasses properly."""
+    def custom_deserializer(dct):
+        if '__dataclass__' in dct:
+            # Import the dataclass dynamically
+            module_path, class_name = dct['__dataclass__'].rsplit('.', 1)
+            try:
+                module = __import__(module_path, fromlist=[class_name])
+                cls = getattr(module, class_name)
+                return cls(**dct['__data__'])
+            except (ImportError, AttributeError) as e:
+                # If we can't import the class, return the raw data
+                return dct['__data__']
+        return dct
+    
+    return json.loads(serialized, object_hook=custom_deserializer)
 
 
 @dataclass
@@ -150,7 +183,22 @@ class ConceptCache:
                 conn.commit()
                 
                 self.stats['hits'] += 1
-                return json.loads(row['value'])
+                try:
+                    deserialized_value = _deserialize_value(row['value'])
+                    # Additional validation for ExternalConceptData objects
+                    if hasattr(deserialized_value, '__class__') and 'ExternalConceptData' in str(type(deserialized_value)):
+                        # Ensure it has required attributes
+                        if not hasattr(deserialized_value, 'external_id') or not hasattr(deserialized_value, 'source'):
+                            self.logger.warning(f"Invalid ExternalConceptData in cache for key '{key}', removing")
+                            self._delete_key(key)
+                            self.stats['misses'] += 1
+                            return None
+                    return deserialized_value
+                except (json.JSONDecodeError, TypeError, AttributeError) as e:
+                    self.logger.warning(f"Failed to deserialize cached value for key '{key}': {e}, removing from cache")
+                    self._delete_key(key)
+                    self.stats['misses'] += 1
+                    return None
                 
         except Exception as e:
             self.logger.error(f"Cache get error for key '{key}': {e}")
@@ -161,7 +209,7 @@ class ConceptCache:
         """Set a value in the cache."""
         try:
             # Serialize value
-            serialized_value = json.dumps(value, default=str)
+            serialized_value = _serialize_value(value)
             size = len(serialized_value.encode('utf-8'))
             
             # Calculate expiration
@@ -339,6 +387,33 @@ class ConceptCache:
         except Exception as e:
             self.logger.error(f"Error getting entries by source '{source}': {e}")
             return []
+    
+    def validate_and_clean_cache(self):
+        """Validate cache entries and remove corrupted ones."""
+        corrupted_keys = []
+        
+        try:
+            with self._get_connection() as conn:
+                cursor = conn.execute('SELECT key, value FROM cache_entries')
+                
+                for row in cursor.fetchall():
+                    try:
+                        _deserialize_value(row['value'])
+                    except Exception:
+                        corrupted_keys.append(row['key'])
+                
+                # Remove corrupted entries
+                if corrupted_keys:
+                    placeholders = ','.join('?' * len(corrupted_keys))
+                    conn.execute(f'DELETE FROM cache_entries WHERE key IN ({placeholders})', corrupted_keys)
+                    conn.commit()
+                    
+                    self.logger.info(f"Removed {len(corrupted_keys)} corrupted cache entries")
+                    
+        except Exception as e:
+            self.logger.error(f"Error validating cache: {e}")
+        
+        return len(corrupted_keys)
     
     def close(self):
         """Close the cache and clean up resources."""

@@ -53,6 +53,17 @@ class ConceptType(Enum):
     EXAMPLE = "example"
     APPLICATION = "application"
     LIMITATION = "limitation"
+    
+    # Additional types from knowledge graph
+    INVESTMENT_VEHICLE = "investment_vehicle"
+    METHOD = "method"
+    PERFORMANCE_MEASURE = "performance_measure"
+    PRICING_MODEL = "pricing_model"
+    RESEARCHER = "researcher"
+    RISK_MEASURE = "risk_measure"
+    STATISTICAL_MEASURE = "statistical_measure"
+    THEORY = "theory"
+    CONCEPT = "concept"  # Generic concept type
 
 
 class RelationshipType(Enum):
@@ -109,6 +120,19 @@ class Concept:
     source_document: Optional[str] = None
     source_page: Optional[int] = None
     confidence: float = 1.0
+    
+    # Enhanced metadata fields
+    definition: Optional[str] = None        # Formal definition of the concept
+    examples: List[str] = field(default_factory=list)  # Usage examples
+    related_formulas: List[str] = field(default_factory=list)  # Related mathematical formulas
+    applications: List[str] = field(default_factory=list)  # Practical applications
+    prerequisites: List[str] = field(default_factory=list)  # Required knowledge
+    complexity_level: Optional[str] = None  # beginner, intermediate, advanced
+    domain: Optional[str] = None           # mathematics, finance, economics, etc.
+    keywords: List[str] = field(default_factory=list)  # Additional search keywords
+    external_links: Dict[str, str] = field(default_factory=dict)  # URLs to external resources
+    created_at: Optional[str] = None       # Timestamp when concept was added
+    updated_at: Optional[str] = None       # Timestamp when concept was last updated
     
     def __post_init__(self):
         """Validate the concept after initialization."""
@@ -190,37 +214,115 @@ class FinancialMathOntology:
             self.logger.error(f"Failed to initialize external ontologies: {e}")
     
     def _initialize_core_concepts(self) -> None:
-        """Initialize core financial mathematics concepts."""
+        """Initialize core financial mathematics concepts with rich metadata."""
+        from datetime import datetime
+        timestamp = datetime.now().isoformat()
         
-        # Core mathematical concepts
-        core_math_concepts = [
-            ("portfolio_theory", "Portfolio Theory", ConceptType.METHODOLOGY),
-            ("mean_variance", "Mean-Variance Optimization", ConceptType.OPTIMIZATION),
-            ("efficient_frontier", "Efficient Frontier", ConceptType.METHODOLOGY),
-            ("sharpe_ratio", "Sharpe Ratio", ConceptType.METRIC),
-            ("expected_return", "Expected Return", ConceptType.METRIC),
-            ("variance", "Variance", ConceptType.METRIC),
-            ("covariance", "Covariance", ConceptType.METRIC),
-            ("correlation", "Correlation", ConceptType.METRIC),
-            ("risk_free_rate", "Risk-Free Rate", ConceptType.PARAMETER),
-            ("portfolio_weight", "Portfolio Weight", ConceptType.VARIABLE),
-            ("asset_return", "Asset Return", ConceptType.VARIABLE),
-            ("portfolio_return", "Portfolio Return", ConceptType.VARIABLE),
-            ("risk_aversion", "Risk Aversion", ConceptType.PARAMETER),
-            ("lagrangian", "Lagrangian", ConceptType.FUNCTION),
-            ("objective_function", "Objective Function", ConceptType.FUNCTION),
-            ("constraint", "Constraint", ConceptType.CONSTRAINT),
-            ("optimization_problem", "Optimization Problem", ConceptType.METHODOLOGY),
+        # Enhanced core concepts with detailed metadata
+        enhanced_concepts = [
+            {
+                "id": "portfolio_theory",
+                "name": "Portfolio Theory",
+                "concept_type": ConceptType.METHODOLOGY,
+                "description": "Mathematical framework for constructing optimal investment portfolios",
+                "definition": "A theory that describes how to construct portfolios to optimize expected return based on a given level of market risk",
+                "latex": r"\text{Portfolio Theory: } E[R_p] = \sum_{i=1}^{n} w_i E[R_i]",
+                "examples": ["Modern Portfolio Theory by Markowitz", "Capital Asset Pricing Model", "Efficient frontier construction"],
+                "applications": ["Asset allocation", "Risk management", "Investment strategy"],
+                "complexity_level": "intermediate",
+                "domain": "finance",
+                "keywords": ["optimization", "diversification", "risk-return"],
+                "external_links": {
+                    "wikipedia": "https://en.wikipedia.org/wiki/Modern_portfolio_theory"
+                }
+            },
+            {
+                "id": "sharpe_ratio",
+                "name": "Sharpe Ratio",
+                "concept_type": ConceptType.METRIC,
+                "description": "Risk-adjusted return metric measuring excess return per unit of risk",
+                "definition": "A measure for calculating risk-adjusted return, defined as the average return earned in excess of the risk-free rate per unit of volatility",
+                "latex": r"S = \frac{E[R_p] - R_f}{\sigma_p}",
+                "notation": "S = (Expected Return - Risk-free Rate) / Standard Deviation",
+                "examples": ["Portfolio performance evaluation", "Fund comparison", "Risk-adjusted benchmarking"],
+                "applications": ["Performance measurement", "Portfolio optimization", "Risk assessment"],
+                "prerequisites": ["Expected return", "Standard deviation", "Risk-free rate"],
+                "complexity_level": "beginner",
+                "domain": "finance",
+                "keywords": ["risk-adjusted", "performance", "volatility"],
+                "related_formulas": ["E[R_p] - R_f", "σ_p = √(Var(R_p))"],
+                "external_links": {
+                    "investopedia": "https://www.investopedia.com/terms/s/sharperatio.asp"
+                }
+            },
+            {
+                "id": "expected_return",
+                "name": "Expected Return",
+                "concept_type": ConceptType.METRIC,
+                "description": "Anticipated return on an investment based on historical data or probability distributions",
+                "definition": "The profit or loss an investor anticipates on an investment with various known or anticipated rates of return",
+                "latex": r"E[R] = \sum_{i=1}^{n} p_i \cdot r_i",
+                "notation": "E[R] = Σ(probability × return)",
+                "examples": ["Stock return forecasting", "Portfolio expected return calculation", "Investment decision making"],
+                "applications": ["Portfolio optimization", "Risk assessment", "Investment planning"],
+                "complexity_level": "beginner",
+                "domain": "finance",
+                "keywords": ["probability", "forecast", "investment"]
+            },
+            {
+                "id": "efficient_frontier",
+                "name": "Efficient Frontier",
+                "concept_type": ConceptType.METHODOLOGY,
+                "description": "Set of optimal portfolios offering highest expected return for each level of risk",
+                "definition": "A curve on a graph representing portfolios that provide the maximum expected return for a given level of risk",
+                "latex": r"\text{Minimize: } w^T \Sigma w \text{ subject to: } w^T \mu = \mu_p, \sum w_i = 1",
+                "examples": ["Mean-variance optimization", "Asset allocation strategies", "Portfolio construction"],
+                "applications": ["Investment management", "Risk budgeting", "Strategic asset allocation"],
+                "prerequisites": ["Portfolio theory", "Mean-variance optimization", "Risk-return relationship"],
+                "complexity_level": "advanced",
+                "domain": "finance",
+                "keywords": ["optimization", "risk-return", "portfolio"]
+            },
+            {
+                "id": "covariance_matrix",
+                "name": "Covariance Matrix",
+                "concept_type": ConceptType.MATRIX,
+                "description": "Matrix containing covariances between pairs of asset returns",
+                "definition": "A square matrix giving the covariance between each pair of elements in a random vector",
+                "latex": r"\Sigma = \begin{pmatrix} \sigma_{11} & \sigma_{12} & \cdots \\ \sigma_{21} & \sigma_{22} & \cdots \\ \vdots & \vdots & \ddots \end{pmatrix}",
+                "notation": "Σ (Sigma matrix)",
+                "examples": ["Risk model construction", "Portfolio variance calculation", "Correlation analysis"],
+                "applications": ["Risk management", "Portfolio optimization", "Factor modeling"],
+                "prerequisites": ["Variance", "Covariance", "Matrix operations"],
+                "complexity_level": "intermediate",
+                "domain": "mathematics",
+                "keywords": ["variance", "correlation", "risk modeling"]
+            }
         ]
         
-        for concept_id, name, concept_type in core_math_concepts:
+        # Create enhanced concept objects
+        for concept_data in enhanced_concepts:
             concept = Concept(
-                id=concept_id,
-                name=name,
-                concept_type=concept_type,
-                confidence=1.0
+                id=concept_data["id"],
+                name=concept_data["name"],
+                concept_type=concept_data["concept_type"],
+                description=concept_data.get("description"),
+                definition=concept_data.get("definition"),
+                latex=concept_data.get("latex"),
+                notation=concept_data.get("notation"),
+                examples=concept_data.get("examples", []),
+                applications=concept_data.get("applications", []),
+                prerequisites=concept_data.get("prerequisites", []),
+                complexity_level=concept_data.get("complexity_level"),
+                domain=concept_data.get("domain"),
+                keywords=concept_data.get("keywords", []),
+                related_formulas=concept_data.get("related_formulas", []),
+                external_links=concept_data.get("external_links", {}),
+                confidence=1.0,
+                created_at=timestamp,
+                updated_at=timestamp
             )
-            self.concepts[concept_id] = concept
+            self.concepts[concept.id] = concept
     
     def _initialize_hierarchies(self) -> None:
         """Initialize concept hierarchies and relationships."""
@@ -436,7 +538,18 @@ class FinancialMathOntology:
                     "properties": concept.properties,
                     "source_document": concept.source_document,
                     "source_page": concept.source_page,
-                    "confidence": concept.confidence
+                    "confidence": concept.confidence,
+                    "definition": concept.definition,
+                    "examples": concept.examples,
+                    "related_formulas": concept.related_formulas,
+                    "applications": concept.applications,
+                    "prerequisites": concept.prerequisites,
+                    "complexity_level": concept.complexity_level,
+                    "domain": concept.domain,
+                    "keywords": concept.keywords,
+                    "external_links": concept.external_links,
+                    "created_at": concept.created_at,
+                    "updated_at": concept.updated_at
                 }
                 for concept in self.concepts.values()
             ],
@@ -477,7 +590,18 @@ class FinancialMathOntology:
                     "properties": concept.properties,
                     "source_document": concept.source_document or "",
                     "source_page": concept.source_page,
-                    "confidence": concept.confidence
+                    "confidence": concept.confidence,
+                    "definition": concept.definition or "",
+                    "examples": concept.examples,
+                    "related_formulas": concept.related_formulas,
+                    "applications": concept.applications,
+                    "prerequisites": concept.prerequisites,
+                    "complexity_level": concept.complexity_level or "",
+                    "domain": concept.domain or "",
+                    "keywords": concept.keywords,
+                    "external_links": concept.external_links,
+                    "created_at": concept.created_at or "",
+                    "updated_at": concept.updated_at or ""
                 }
             }
             nodes.append(node)

@@ -27,7 +27,7 @@ def run_server():
     from src.settings import Settings
     
     settings = Settings()
-    app = create_app(settings)
+    app = create_app()
     
     print("Starting Knowledge Graph Visualizer...")
     print(f"Server will be available at: http://localhost:{settings.web_port}")

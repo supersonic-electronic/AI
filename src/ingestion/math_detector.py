@@ -43,8 +43,9 @@ class MathDetector:
             'Symbol', 'MT-Symbol', 'ZapfDingbats'  # Symbol fonts
         }
         
-        # LaTeX symbol mappings
+        # Enhanced LaTeX symbol mappings (150+ symbols for financial mathematics)
         self.symbol_to_latex = {
+            # Basic mathematical symbols
             '∫': r'\int',
             '∑': r'\sum',
             '∏': r'\prod',
@@ -61,6 +62,8 @@ class MathDetector:
             '÷': r'\div',
             '∘': r'\circ',
             '√': r'\sqrt',
+            
+            # Greek letters (lowercase)
             'α': r'\alpha',
             'β': r'\beta',
             'γ': r'\gamma',
@@ -69,25 +72,220 @@ class MathDetector:
             'ζ': r'\zeta',
             'η': r'\eta',
             'θ': r'\theta',
+            'ι': r'\iota',
+            'κ': r'\kappa',
             'λ': r'\lambda',
             'μ': r'\mu',
+            'ν': r'\nu',
+            'ξ': r'\xi',
             'π': r'\pi',
             'ρ': r'\rho',
             'σ': r'\sigma',
             'τ': r'\tau',
+            'υ': r'\upsilon',
             'φ': r'\phi',
             'χ': r'\chi',
             'ψ': r'\psi',
             'ω': r'\omega',
+            
+            # Greek letters (uppercase)
+            'Α': r'\Alpha',
+            'Β': r'\Beta',
             'Γ': r'\Gamma',
             'Δ': r'\Delta',
+            'Ε': r'\Epsilon',
+            'Ζ': r'\Zeta',
+            'Η': r'\Eta',
             'Θ': r'\Theta',
+            'Ι': r'\Iota',
+            'Κ': r'\Kappa',
             'Λ': r'\Lambda',
+            'Μ': r'\Mu',
+            'Ν': r'\Nu',
+            'Ξ': r'\Xi',
+            'Ο': r'\Omicron',
             'Π': r'\Pi',
+            'Ρ': r'\Rho',
             'Σ': r'\Sigma',
+            'Τ': r'\Tau',
+            'Υ': r'\Upsilon',
             'Φ': r'\Phi',
+            'Χ': r'\Chi',
             'Ψ': r'\Psi',
-            'Ω': r'\Omega'
+            'Ω': r'\Omega',
+            
+            # Extended mathematical operators
+            '∬': r'\iint',
+            '∭': r'\iiint',
+            '∮': r'\oint',
+            '∯': r'\oiint',
+            '∰': r'\oiiint',
+            '∱': r'\intclockwise',
+            '∲': r'\varointclockwise',
+            '∳': r'\ointctrclockwise',
+            
+            # Set theory and logic
+            '∈': r'\in',
+            '∉': r'\notin',
+            '∋': r'\ni',
+            '∌': r'\notni',
+            '⊂': r'\subset',
+            '⊃': r'\supset',
+            '⊆': r'\subseteq',
+            '⊇': r'\supseteq',
+            '⊈': r'\nsubseteq',
+            '⊉': r'\nsupseteq',
+            '∪': r'\cup',
+            '∩': r'\cap',
+            '∧': r'\land',
+            '∨': r'\lor',
+            '¬': r'\lnot',
+            '⇒': r'\Rightarrow',
+            '⇐': r'\Leftarrow',
+            '⇔': r'\Leftrightarrow',
+            '→': r'\rightarrow',
+            '←': r'\leftarrow',
+            '↔': r'\leftrightarrow',
+            '∀': r'\forall',
+            '∃': r'\exists',
+            '∄': r'\nexists',
+            '∅': r'\emptyset',
+            '∁': r'\complement',
+            
+            # Relations and comparisons
+            '≡': r'\equiv',
+            '≢': r'\not\equiv',
+            '≅': r'\cong',
+            '≃': r'\simeq',
+            '≄': r'\not\simeq',
+            '∼': r'\sim',
+            '≁': r'\nsim',
+            '≪': r'\ll',
+            '≫': r'\gg',
+            '⊥': r'\perp',
+            '∥': r'\parallel',
+            '∦': r'\nparallel',
+            '∝': r'\propto',
+            '∴': r'\therefore',
+            '∵': r'\because',
+            
+            # Arrows and vectors
+            '⟶': r'\longrightarrow',
+            '⟵': r'\longleftarrow',
+            '⟷': r'\longleftrightarrow',
+            '⟹': r'\Longrightarrow',
+            '⟸': r'\Longleftarrow',
+            '⟺': r'\Longleftrightarrow',
+            '↑': r'\uparrow',
+            '↓': r'\downarrow',
+            '↕': r'\updownarrow',
+            '⇑': r'\Uparrow',
+            '⇓': r'\Downarrow',
+            '⇕': r'\Updownarrow',
+            '↗': r'\nearrow',
+            '↘': r'\searrow',
+            '↙': r'\swarrow',
+            '↖': r'\nwarrow',
+            
+            # Financial mathematics symbols (Black-Scholes Greeks)
+            # Note: Δ, Γ, Θ already included above
+            'ϰ': r'\varkappa',  # Alternative kappa for volatility
+            'ϱ': r'\varrho',    # Alternative rho for correlation
+            'ℝ': r'\mathbb{R}', # Real numbers (returns)
+            'ℕ': r'\mathbb{N}', # Natural numbers
+            'ℚ': r'\mathbb{Q}', # Rational numbers
+            'ℤ': r'\mathbb{Z}', # Integers
+            'ℂ': r'\mathbb{C}', # Complex numbers
+            'ℙ': r'\mathbb{P}', # Probability measure
+            '𝔼': r'\mathbb{E}', # Expected value
+            '𝕍': r'\mathbb{V}', # Variance
+            
+            # Statistical and probability symbols
+            '≅': r'\stackrel{d}{=}',  # Distribution equality
+            '⟶': r'\xrightarrow{d}',  # Convergence in distribution
+            '⟶': r'\xrightarrow{p}',  # Convergence in probability
+            '∼': r'\sim',              # Distributed as
+            '⊥': r'\perp',             # Independence
+            '⊥⊥': r'\perp\!\!\!\perp', # Independence (double)
+            
+            # Matrix and linear algebra symbols
+            '⊗': r'\otimes',     # Kronecker product
+            '⊕': r'\oplus',      # Direct sum
+            '⊙': r'\odot',       # Hadamard product
+            '†': r'\dagger',     # Matrix transpose/adjoint
+            '‖': r'\|',          # Matrix norm
+            '⟨': r'\langle',     # Inner product left
+            '⟩': r'\rangle',     # Inner product right
+            '⊤': r'\top',        # Transpose
+            '⊥': r'\bot',        # Orthogonal
+            'tr': r'\text{tr}',  # Trace
+            'det': r'\det',      # Determinant
+            'rank': r'\text{rank}', # Matrix rank
+            
+            # Optimization symbols
+            '∇': r'\nabla',         # Gradient
+            '∇²': r'\nabla^2',      # Hessian
+            '∂': r'\partial',       # Partial derivative
+            '𝒪': r'\mathcal{O}',    # Big O notation
+            '∘': r'\circ',          # Function composition
+            '⊆': r'\subseteq',      # Constraint set inclusion
+            '∈': r'\in',            # Element of feasible set
+            '≥': r'\geq',           # Inequality constraint
+            '≤': r'\leq',           # Inequality constraint
+            
+            # Financial notation
+            'E': r'\mathbb{E}',     # Expected value (alternative)
+            'V': r'\text{Var}',     # Variance function
+            'Cov': r'\text{Cov}',   # Covariance function
+            'Corr': r'\text{Corr}', # Correlation function
+            'R': r'R',              # Return (in context)
+            'r': r'r',              # Risk-free rate
+            'σ': r'\sigma',         # Volatility (already included)
+            'Σ': r'\Sigma',         # Covariance matrix (already included)
+            'w': r'w',              # Portfolio weights
+            'μ': r'\mu',            # Expected return (already included)
+            'ρ': r'\rho',           # Correlation (already included)
+            'β': r'\beta',          # Beta coefficient (already included)
+            'α': r'\alpha',         # Alpha (already included)
+            
+            # Subscripts and superscripts (Unicode)
+            '₀': r'_0', '₁': r'_1', '₂': r'_2', '₃': r'_3', '₄': r'_4',
+            '₅': r'_5', '₆': r'_6', '₇': r'_7', '₈': r'_8', '₉': r'_9',
+            '⁰': r'^0', '¹': r'^1', '²': r'^2', '³': r'^3', '⁴': r'^4',
+            '⁵': r'^5', '⁶': r'^6', '⁷': r'^7', '⁸': r'^8', '⁹': r'^9',
+            
+            # Special mathematical symbols
+            '∡': r'\measuredangle',
+            '∢': r'\sphericalangle',
+            '⌐': r'\neg',
+            '⌈': r'\lceil',
+            '⌉': r'\rceil',
+            '⌊': r'\lfloor',
+            '⌋': r'\rfloor',
+            '⟨': r'\langle',
+            '⟩': r'\rangle',
+            '⟦': r'\llbracket',
+            '⟧': r'\rrbracket',
+            
+            # Currency and financial symbols
+            '$': r'\$',
+            '€': r'\euro',
+            '£': r'\pounds',
+            '¥': r'\yen',
+            '¢': r'\cent',
+            
+            # Miscellaneous mathematical symbols
+            '∎': r'\qed',
+            '∘': r'\circ',
+            '•': r'\bullet',
+            '◦': r'\circ',
+            '★': r'\star',
+            '☆': r'\star',
+            '◊': r'\diamond',
+            '♠': r'\spadesuit',
+            '♣': r'\clubsuit',
+            '♥': r'\heartsuit',
+            '♦': r'\diamondsuit',
         }
         
         # Initialize Mathpix client if configured
@@ -119,10 +317,9 @@ class MathDetector:
     
     def _compile_patterns(self) -> None:
         """Precompile all regex patterns for performance."""
-        # Mathematical symbol patterns
-        self.math_symbols_pattern = re.compile(
-            r'[∫∑∏∂∇∞≤≥≠≈±∓×÷∘√αβγδεζηθλμπρστφχψωΓΔΘΛΠΣΦΨΩ]'
-        )
+        # Enhanced mathematical symbol patterns (150+ symbols)
+        extended_symbols = ''.join(self.symbol_to_latex.keys())
+        self.math_symbols_pattern = re.compile(f'[{re.escape(extended_symbols)}]')
         
         # Equation patterns
         self.equation_patterns = [
@@ -131,12 +328,46 @@ class MathDetector:
             re.compile(r'=\s*[a-zA-Z0-9_]'),         # = variable/number
         ]
         
-        # Mathematical operator patterns
-        self.operator_pattern = re.compile(r'[+\-*/^()[\]{}|]')
+        # Multi-line equation environment patterns (LaTeX)
+        self.multiline_equation_patterns = [
+            re.compile(r'\\begin\{align\*?\}.*?\\end\{align\*?\}', re.DOTALL | re.MULTILINE),
+            re.compile(r'\\begin\{gather\*?\}.*?\\end\{gather\*?\}', re.DOTALL | re.MULTILINE),
+            re.compile(r'\\begin\{split\}.*?\\end\{split\}', re.DOTALL | re.MULTILINE),
+            re.compile(r'\\begin\{cases\}.*?\\end\{cases\}', re.DOTALL | re.MULTILINE),
+            re.compile(r'\\begin\{array\}.*?\\end\{array\}', re.DOTALL | re.MULTILINE),
+            re.compile(r'\\begin\{eqnarray\*?\}.*?\\end\{eqnarray\*?\}', re.DOTALL | re.MULTILINE),
+        ]
         
-        # Subscript/superscript patterns
+        # Matrix environment patterns
+        self.matrix_patterns = [
+            re.compile(r'\\begin\{pmatrix\}.*?\\end\{pmatrix\}', re.DOTALL | re.MULTILINE),
+            re.compile(r'\\begin\{bmatrix\}.*?\\end\{bmatrix\}', re.DOTALL | re.MULTILINE),
+            re.compile(r'\\begin\{vmatrix\}.*?\\end\{vmatrix\}', re.DOTALL | re.MULTILINE),
+            re.compile(r'\\begin\{Vmatrix\}.*?\\end\{Vmatrix\}', re.DOTALL | re.MULTILINE),
+            re.compile(r'\\begin\{matrix\}.*?\\end\{matrix\}', re.DOTALL | re.MULTILINE),
+            re.compile(r'\\begin\{smallmatrix\}.*?\\end\{smallmatrix\}', re.DOTALL | re.MULTILINE),
+        ]
+        
+        # Financial mathematics specific patterns
+        self.financial_patterns = [
+            re.compile(r'Black.?Scholes|BS.?model', re.IGNORECASE),
+            re.compile(r'Greeks?\s*[:=]?\s*[\s\w]*[ΔΓΘΡΚδγθρκ]', re.IGNORECASE),
+            re.compile(r'portfolio\s+optimization|mean.variance', re.IGNORECASE),
+            re.compile(r'VaR|Value.?at.?Risk|CVaR|expected.?shortfall', re.IGNORECASE),
+            re.compile(r'correlation\s+matrix|covariance\s+matrix', re.IGNORECASE),
+            re.compile(r'Sharpe\s+ratio|Information\s+ratio', re.IGNORECASE),
+        ]
+        
+        # Mathematical operator patterns (expanded)
+        self.operator_pattern = re.compile(r'[+\-*/^()[\]{}|⊗⊕⊙†‖∘]')
+        
+        # Enhanced subscript/superscript patterns
         self.subscript_pattern = re.compile(r'[a-zA-Z_]\w*[_₀₁₂₃₄₅₆₇₈₉]')
         self.superscript_pattern = re.compile(r'[a-zA-Z_]\w*[\^⁰¹²³⁴⁵⁶⁷⁸⁹]')
+        
+        # Unicode subscript/superscript patterns
+        self.unicode_subscript_pattern = re.compile(r'[₀₁₂₃₄₅₆₇₈₉₊₋₌₍₎]')
+        self.unicode_superscript_pattern = re.compile(r'[⁰¹²³⁴⁵⁶⁷⁸⁹⁺⁻⁼⁽⁾]')
         
         # Mathematical variable patterns
         self.variable_patterns = [
@@ -240,6 +471,15 @@ class MathDetector:
         total_score += matrix_score
         score_breakdown['matrix_vector'] = int(matrix_score)
         
+        # 7.5. Multi-line equation environments score (FR2 enhancement)
+        multiline_score = 0.0
+        for pattern in self.multiline_equation_patterns:
+            if pattern.search(text):
+                multiline_score += 1.5  # Higher weight for complex equations
+        multiline_score = min(3.0, multiline_score)
+        total_score += multiline_score
+        score_breakdown['multiline_equations'] = int(multiline_score / 1.5)
+        
         # 8. Subscript/superscript score
         subscript_matches = len(self.subscript_pattern.findall(text))
         superscript_matches = len(self.superscript_pattern.findall(text))
@@ -260,7 +500,7 @@ class MathDetector:
             score_breakdown['mathref_markers'] = mathref_matches
         
         # Calculate confidence score (0.0 to 1.0)
-        max_possible_score = 15.0
+        max_possible_score = 18.0  # Updated for multi-line equations
         confidence = min(1.0, total_score / max_possible_score)
         
         # Determine if content is mathematical

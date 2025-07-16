@@ -36,6 +36,7 @@ class RelationshipScore:
     frequency_score: float
     semantic_score: float
     mathematical_score: float
+    external_score: float
     total_score: float
     strength: RelationshipStrength
     evidence: List[str] = field(default_factory=list)
@@ -55,13 +56,14 @@ class RelationshipMapper:
         self.ontology = ontology
         self.logger = logging.getLogger(__name__)
         
-        # Initialize relationship scoring parameters
+        # Initialize relationship scoring parameters (6-component system)
         self.scoring_weights = {
-            'base_score': 0.3,
-            'context_score': 0.2,
-            'frequency_score': 0.15,
-            'semantic_score': 0.2,
-            'mathematical_score': 0.15
+            'base_score': 0.25,          # Reduced from 0.3
+            'context_score': 0.2,        # Unchanged
+            'frequency_score': 0.15,     # Unchanged
+            'semantic_score': 0.2,       # Unchanged
+            'mathematical_score': 0.1,   # Reduced from 0.15
+            'external_score': 0.1        # New external evidence component
         }
         
         # Relationship strength thresholds
@@ -443,13 +445,17 @@ class RelationshipMapper:
         # Mathematical score based on mathematical relationship patterns
         mathematical_score = self._calculate_mathematical_score(candidates, document_texts)
         
-        # Calculate weighted total score
+        # External evidence score based on external ontology relationships
+        external_score = self._calculate_external_score(source_concept, target_concept)
+        
+        # Calculate weighted total score (6-component system)
         total_score = (
             base_score * self.scoring_weights['base_score'] +
             context_score * self.scoring_weights['context_score'] +
             frequency_score * self.scoring_weights['frequency_score'] +
             semantic_score * self.scoring_weights['semantic_score'] +
-            mathematical_score * self.scoring_weights['mathematical_score']
+            mathematical_score * self.scoring_weights['mathematical_score'] +
+            external_score * self.scoring_weights['external_score']
         )
         
         # Determine relationship strength
@@ -472,6 +478,7 @@ class RelationshipMapper:
             frequency_score=frequency_score,
             semantic_score=semantic_score,
             mathematical_score=mathematical_score,
+            external_score=external_score,
             total_score=total_score,
             strength=strength,
             evidence=evidence
@@ -519,6 +526,54 @@ class RelationshipMapper:
                 return 0.4
         
         return 0.2
+    
+    def _calculate_external_score(self, source_concept: ExtractedConcept, 
+                                target_concept: ExtractedConcept) -> float:
+        """Calculate external evidence score based on external ontology relationships."""
+        # Check if both concepts have external enrichment data
+        source_external_id = getattr(source_concept, 'external_id', None)
+        target_external_id = getattr(target_concept, 'external_id', None)
+        
+        if not source_external_id or not target_external_id:
+            return 0.0
+        
+        # Get external sources
+        source_external_source = getattr(source_concept, 'external_source', '')
+        target_external_source = getattr(target_concept, 'external_source', '')
+        
+        # If both concepts are from the same external source, boost score
+        if source_external_source and source_external_source == target_external_source:
+            if source_external_source == 'dbpedia':
+                return 0.8  # High confidence for DBpedia relationships
+            elif source_external_source == 'wikidata':
+                return 0.7  # Good confidence for Wikidata relationships
+            else:
+                return 0.5  # Moderate confidence for other sources
+        
+        # Check if concepts are related through categories
+        source_categories = getattr(source_concept, 'categories', [])
+        target_categories = getattr(target_concept, 'categories', [])
+        
+        if source_categories and target_categories:
+            # Count common categories
+            common_categories = set(source_categories) & set(target_categories)
+            if common_categories:
+                # Score based on number of common categories
+                category_score = min(0.6, len(common_categories) * 0.2)
+                return category_score
+        
+        # Check if one concept references the other in related concepts
+        source_related = getattr(source_concept, 'related_external_concepts', [])
+        target_related = getattr(target_concept, 'related_external_concepts', [])
+        
+        if target_external_id in source_related or source_external_id in target_related:
+            return 0.6  # Good evidence of relationship
+        
+        # If both have external enrichment but no clear relationship
+        if source_external_id and target_external_id:
+            return 0.1  # Small boost for external enrichment
+        
+        return 0.0
     
     def _calculate_mathematical_score(self, candidates: List[ExtractedRelationship],
                                     document_texts: Dict[int, str]) -> float:

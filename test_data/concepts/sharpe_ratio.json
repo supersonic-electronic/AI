@@ -1,0 +1,45 @@
+{
+  "name": "Sharpe Ratio",
+  "type": "metric",
+  "description": "Risk-adjusted return metric measuring excess return per unit of risk",
+  "definition": "A measure for calculating risk-adjusted return, defined as the average return earned in excess of the risk-free rate per unit of volatility",
+  "latex": "S = \\frac{E[R_p] - R_f}{\\sigma_p}",
+  "notation": "S = (Expected Return - Risk-free Rate) / Standard Deviation",
+  "examples": [
+    "Portfolio performance evaluation",
+    "Fund comparison",
+    "Risk-adjusted benchmarking"
+  ],
+  "related_formulas": [
+    "E[R_p] - R_f = \\text{Risk Premium}",
+    "\\sigma_p = \\sqrt{\\text{Var}(R_p)}"
+  ],
+  "applications": [
+    "Performance measurement",
+    "Portfolio optimization",
+    "Risk assessment"
+  ],
+  "prerequisites": [
+    "Expected return",
+    "Standard deviation",
+    "Risk-free rate"
+  ],
+  "complexity_level": "beginner",
+  "domain": "finance",
+  "keywords": [
+    "risk-adjusted",
+    "performance",
+    "volatility"
+  ],
+  "external_links": {
+    "investopedia": "https://www.investopedia.com/terms/s/sharperatio.asp"
+  },
+  "confidence": 1.0,
+  "frequency": 25,
+  "context": "Widely used performance metric in finance",
+  "source_docs": [
+    "sharpe_1966.pdf"
+  ],
+  "created_at": "2024-01-01T00:00:00Z",
+  "updated_at": "2024-01-01T00:00:00Z"
+}

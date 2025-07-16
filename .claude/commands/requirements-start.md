@@ -5,12 +5,12 @@ Begin gathering requirements for: $ARGUMENTS
 ## Full Workflow:
 
 ### Phase 1: Initial Setup & Codebase Analysis
-1. Create timestamp-based folder: requirements/YYYY-MM-DD-HHMM-[slug]
+1. Create timestamp-based folder: requirements/YYYY-MM-DD-HHMM-[slug] inside .claude directory of the project
 2. Extract slug from $ARGUMENTS (e.g., "add user profile" → "user-profile")
 3. Create initial files:
    - 00-initial-request.md with the user's request
    - metadata.json with status tracking
-4. Read and update requirements/.current-requirement with folder name
+4. Read and update .claude/requirements/.current-requirement with folder name
 5. Use mcp__RepoPrompt__get_file_tree (if available) to understand overall structure:
    - Get high-level architecture overview
    - Identify main components and services
@@ -96,9 +96,11 @@ Begin gathering requirements for: $ARGUMENTS
 ## Important Rules:
 - ONLY yes/no questions with smart defaults
 - ONE question at a time
+- Save and update the work inside requirements/
 - Write ALL questions to file BEFORE asking any
 - Stay focused on requirements (no implementation)
 - Use actual file paths and component names in detail phase
+- When testing in addition to unit tests, run full pipleline test (as user would via poetry)
 - Document WHY each default makes sense
 - Use tools available if recommended ones aren't installed or available
 

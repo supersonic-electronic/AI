@@ -1,0 +1,4 @@
+data_paths:
+  source_directory: "./data/papers"
+  output_directory: "./data/text"
+  chunks_directory: "./data/chunks"

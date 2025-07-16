@@ -19,18 +19,17 @@ from src.settings import Settings
 from .api.graph import router as graph_router
 from .api.concepts import router as concepts_router
 from .api.search import router as search_router
+from .api.dbpedia import router as dbpedia_router
 
 
-def create_app(settings: Settings) -> FastAPI:
+def create_app() -> FastAPI:
     """
     Create and configure the FastAPI application.
     
-    Args:
-        settings: Application settings
-        
     Returns:
         Configured FastAPI application
     """
+    settings = Settings()
     
     # Create FastAPI app
     app = FastAPI(
@@ -53,6 +52,7 @@ def create_app(settings: Settings) -> FastAPI:
     app.include_router(graph_router, prefix="/api", tags=["graph"])
     app.include_router(concepts_router, prefix="/api", tags=["concepts"])
     app.include_router(search_router, prefix="/api", tags=["search"])
+    app.include_router(dbpedia_router, prefix="/api/dbpedia", tags=["dbpedia"])
     
     # Setup static files and templates
     static_dir = settings.web_static_dir

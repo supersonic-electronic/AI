@@ -894,7 +894,259 @@ select:focus {
     background: var(--error-color);
 }
 
-/* Tooltip styles */
+/* Enhanced tooltip styles (FR4: Interactive Graph Node Tooltips) */
+.enhanced-tooltip {
+    position: fixed;
+    background: var(--bg-dark);
+    color: var(--text-light);
+    border-radius: 8px;
+    font-size: 13px;
+    z-index: 3000;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    box-shadow: var(--shadow-lg);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    max-width: 350px;
+    min-width: 200px;
+}
+
+.enhanced-tooltip.visible {
+    opacity: 1;
+}
+
+.tooltip-header {
+    padding: 12px 16px 8px 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.tooltip-title {
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--text-light);
+    margin-bottom: 4px;
+    word-wrap: break-word;
+}
+
+.tooltip-type {
+    font-size: 11px;
+    color: var(--accent-color);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.tooltip-content {
+    padding: 8px 16px 12px 16px;
+}
+
+.tooltip-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+    font-size: 12px;
+}
+
+.tooltip-row:last-child {
+    margin-bottom: 0;
+}
+
+.tooltip-label {
+    color: rgba(255, 255, 255, 0.8);
+    font-weight: 500;
+    margin-right: 8px;
+    flex-shrink: 0;
+}
+
+.tooltip-value {
+    color: var(--text-light);
+    text-align: right;
+    word-wrap: break-word;
+    flex-grow: 1;
+}
+
+/* Complexity level color coding */
+.tooltip-value.complexity-beginner {
+    color: var(--success-color);
+}
+
+.tooltip-value.complexity-intermediate {
+    color: var(--warning-color);
+}
+
+.tooltip-value.complexity-advanced {
+    color: var(--error-color);
+}
+
+.tooltip-latex {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.tooltip-math {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 8px;
+    border-radius: 4px;
+    margin-top: 4px;
+    font-family: 'Computer Modern', 'Times', serif;
+    text-align: center;
+    overflow-x: auto;
+}
+
+.tooltip-description {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.9);
+    line-height: 1.4;
+    font-style: italic;
+}
+
+/* DBpedia-specific tooltip styles */
+.tooltip-section {
+    margin: 8px 0;
+    padding: 8px 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.tooltip-section:first-child {
+    border-top: none;
+    margin-top: 0;
+    padding-top: 0;
+}
+
+.tooltip-dbpedia-section {
+    background: rgba(142, 36, 170, 0.1);
+    border-radius: 4px;
+    padding: 8px;
+    margin: 8px 0;
+    border: 1px solid rgba(142, 36, 170, 0.3);
+}
+
+.tooltip-local-section {
+    background: rgba(96, 125, 139, 0.1);
+    border-radius: 4px;
+    padding: 8px;
+    margin: 8px 0;
+    border: 1px solid rgba(96, 125, 139, 0.3);
+}
+
+.tooltip-link {
+    color: #64B5F6;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.tooltip-link:hover {
+    color: #90CAF9;
+    text-decoration: underline;
+}
+
+.source-badge {
+    display: inline-block;
+    background: #8E24AA;
+    color: white;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-right: 8px;
+}
+
+.source-badge.local {
+    background: #607D8B;
+}
+
+.source-badge.enriched {
+    background: #4CAF50;
+}
+
+/* Source badges for tooltips */
+.tooltip-source-badge {
+    display: inline-block;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-left: 8px;
+    float: right;
+}
+
+.tooltip-source-badge.dbpedia-badge {
+    background: #8E24AA;
+    color: white;
+}
+
+.tooltip-source-badge.enriched-badge {
+    background: #4CAF50;
+    color: white;
+}
+
+.tooltip-source-badge.local-badge {
+    background: #607D8B;
+    color: white;
+}
+
+/* Related concepts styling */
+.related-concept {
+    display: inline-block;
+    background: rgba(142, 36, 170, 0.2);
+    padding: 1px 4px;
+    border-radius: 2px;
+    margin: 0 2px;
+    font-size: 11px;
+    color: #B39DDB;
+}
+
+/* Neighboring DBpedia nodes styling */
+.neighboring-node {
+    border: 2px dashed rgba(142, 36, 170, 0.5) !important;
+    background: rgba(142, 36, 170, 0.1) !important;
+}
+
+.neighboring-node .node-label {
+    font-style: italic;
+    color: #B39DDB !important;
+}
+
+/* DBpedia categories in tooltips */
+.tooltip-categories {
+    max-height: 100px;
+    overflow-y: auto;
+}
+
+.tooltip-category {
+    display: inline-block;
+    background: rgba(142, 36, 170, 0.15);
+    padding: 1px 3px;
+    border-radius: 2px;
+    margin: 1px;
+    font-size: 10px;
+    color: #E1BEE7;
+}
+
+/* External types styling */
+.tooltip-types {
+    margin-top: 4px;
+}
+
+.tooltip-type {
+    display: inline-block;
+    background: rgba(63, 81, 181, 0.2);
+    padding: 1px 4px;
+    border-radius: 2px;
+    margin: 0 2px;
+    font-size: 10px;
+    color: #9FA8DA;
+}
+
+/* Legacy tooltip styles (for backward compatibility) */
 .tooltip {
     position: absolute;
     background: var(--bg-dark);
@@ -940,6 +1192,190 @@ select:focus {
         image-rendering: -webkit-optimize-contrast;
         image-rendering: crisp-edges;
     }
+}
+
+/* Enhanced concept details styles */
+.concept-name {
+    font-weight: 600;
+    font-size: 16px;
+    color: var(--primary-color);
+}
+
+.math-expression {
+    background: #f8f9fa;
+    padding: 12px;
+    margin: 8px 0;
+    border-radius: 4px;
+    border-left: 3px solid var(--primary-color);
+    font-family: 'Times New Roman', serif;
+    text-align: center;
+}
+
+.formula-item {
+    background: #f0f8ff;
+    padding: 8px;
+    margin: 4px 0;
+    border-radius: 3px;
+    border-left: 2px solid var(--accent-color);
+    font-family: 'Times New Roman', serif;
+}
+
+.concept-list {
+    list-style: none;
+    padding: 0;
+}
+
+.concept-list li {
+    padding: 6px 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.concept-list li:last-child {
+    border-bottom: none;
+}
+
+.tag-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 8px;
+}
+
+.concept-tag, .keyword-tag {
+    background: var(--primary-color);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.keyword-tag {
+    background: var(--secondary-color);
+}
+
+.complexity-badge {
+    padding: 4px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.complexity-beginner {
+    background: var(--success-color);
+    color: white;
+}
+
+.complexity-intermediate {
+    background: var(--warning-color);
+    color: white;
+}
+
+.complexity-advanced {
+    background: var(--error-color);
+    color: white;
+}
+
+.domain-badge {
+    background: var(--accent-color);
+    color: white;
+    padding: 4px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+    text-transform: capitalize;
+}
+
+.external-link {
+    margin: 4px 0;
+}
+
+.external-link a {
+    color: var(--primary-color);
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.external-link a:hover {
+    text-decoration: underline;
+}
+
+.external-icon {
+    font-size: 12px;
+    opacity: 0.7;
+}
+
+.related-concept {
+    cursor: pointer;
+    padding: 8px;
+    margin: 4px 0;
+    border-radius: 4px;
+    border: 1px solid #e0e0e0;
+    background: #fafafa;
+    transition: background-color 0.2s ease;
+}
+
+.related-concept:hover {
+    background: #f0f8ff;
+    border-color: var(--primary-color);
+}
+
+.related-name {
+    color: var(--primary-color);
+    font-weight: 500;
+}
+
+.related-type {
+    color: var(--text-secondary);
+    margin-left: 8px;
+}
+
+.related-relationship {
+    color: var(--accent-color);
+    margin-left: 8px;
+    font-style: italic;
+}
+
+.more-indicator {
+    color: var(--text-secondary);
+    font-size: 12px;
+    text-align: center;
+    padding: 8px;
+    font-style: italic;
+}
+
+.source-info {
+    background: #f8f9fa;
+    padding: 8px;
+    border-radius: 4px;
+    border-left: 2px solid var(--secondary-color);
+}
+
+.source-info small {
+    color: var(--text-secondary);
+    display: block;
+    margin-top: 4px;
+}
+
+.timestamp {
+    color: var(--text-secondary);
+    font-size: 12px;
+}
+
+/* MathJax styling improvements */
+.MathJax {
+    font-size: 1.1em !important;
+}
+
+.math-expression .MathJax {
+    font-size: 1.3em !important;
+}
+
+.formula-item .MathJax {
+    font-size: 1.1em !important;
 }
 
 /* Reduced motion support */

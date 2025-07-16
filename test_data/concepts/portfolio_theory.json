@@ -1,0 +1,46 @@
+{
+  "name": "Portfolio Theory",
+  "type": "methodology",
+  "description": "Mathematical framework for constructing optimal investment portfolios",
+  "definition": "A theory that describes how to construct portfolios to optimize expected return based on a given level of market risk",
+  "latex": "E[R_p] = \\sum_{i=1}^{n} w_i E[R_i]",
+  "notation": "E[R_p] = Expected Portfolio Return",
+  "examples": [
+    "Modern Portfolio Theory by Markowitz",
+    "Capital Asset Pricing Model",
+    "Efficient frontier construction"
+  ],
+  "related_formulas": [
+    "\\sigma_p^2 = \\sum_{i=1}^{n} \\sum_{j=1}^{n} w_i w_j \\sigma_{ij}",
+    "\\text{Sharpe Ratio} = \\frac{E[R_p] - R_f}{\\sigma_p}"
+  ],
+  "applications": [
+    "Asset allocation",
+    "Risk management",
+    "Investment strategy"
+  ],
+  "prerequisites": [
+    "Expected return",
+    "Variance and covariance",
+    "Risk-return relationship"
+  ],
+  "complexity_level": "intermediate",
+  "domain": "finance",
+  "keywords": [
+    "optimization",
+    "diversification",
+    "risk-return"
+  ],
+  "external_links": {
+    "wikipedia": "https://en.wikipedia.org/wiki/Modern_portfolio_theory",
+    "investopedia": "https://www.investopedia.com/terms/m/modernportfoliotheory.asp"
+  },
+  "confidence": 1.0,
+  "frequency": 15,
+  "context": "Foundation of modern quantitative finance",
+  "source_docs": [
+    "markowitz_1952.pdf"
+  ],
+  "created_at": "2024-01-01T00:00:00Z",
+  "updated_at": "2024-01-01T00:00:00Z"
+}

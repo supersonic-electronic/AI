@@ -59,3 +59,10 @@ pinecone_environment: "us-east-1-aws"       # Pinecone environment
 # Vector Store Configuration - Chroma (Local)
 chroma_persist_directory: "./data/chroma_db"   # Local Chroma database directory
 chroma_collection_name: "document_embeddings"  # Chroma collection name
+
+# Processing Configuration
+processing:
+  timeout_seconds: 300
+  chunk_size: 1500
+  chunk_overlap: 150
+  batch_size: 50

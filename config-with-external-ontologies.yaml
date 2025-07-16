@@ -1,6 +1,13 @@
 # AI Portfolio Optimizer Configuration with External Knowledge Integration
 # This configuration file demonstrates the external ontology integration features
 
+# Data Paths (required by schema)
+data_paths:
+  source_directory: "./data/papers"
+  output_directory: "./data/output"
+  chunks_directory: "./data/chunks"
+  cache_directory: "./data/cache"
+
 # Directory Paths
 input_dir: "./data/papers"
 text_dir: "./data/text"
@@ -48,6 +55,13 @@ math_detection_threshold: 3
 mathpix_timeout: 30.0
 mathpix_max_retries: 3
 mathpix_retry_delay: 1.0
+
+# Processing Configuration
+processing:
+  timeout_seconds: 300
+  chunk_size: 1500
+  chunk_overlap: 150
+  batch_size: 50
 
 # Document Chunking and Embedding
 chunk_size: 500

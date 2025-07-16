@@ -1,0 +1,26 @@
+{
+  "id": "dbpedia-integration",
+  "started": "2025-07-16T10:32:00Z",
+  "lastUpdated": "2025-07-16T10:32:00Z",
+  "status": "active",
+  "phase": "complete",
+  "progress": {
+    "discovery": { "answered": 5, "total": 5 },
+    "detail": { "answered": 5, "total": 5 }
+  },
+  "contextFiles": [
+    "src/frontend/app.py",
+    "src/frontend/static/js/graph.js", 
+    "src/frontend/static/js/main.js",
+    "src/knowledge/external_ontologies.py",
+    "run_dbpedia_workflow.py",
+    "demo_tooltip_data.py"
+  ],
+  "relatedFeatures": [
+    "existing_cytoscape_visualization",
+    "dbpedia_connector_implementation", 
+    "concept_cache_system",
+    "enhanced_tooltip_system",
+    "external_ontology_management"
+  ]
+}

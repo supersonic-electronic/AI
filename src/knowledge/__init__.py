@@ -13,7 +13,7 @@ from .ontology import (
     FinancialMathOntology
 )
 
-from .graph_db import GraphDatabase
+# from .graph_db import GraphDatabase
 
 from .concept_extractor import (
     ConceptExtractor,
@@ -51,7 +51,7 @@ __all__ = [
     'FinancialMathOntology',
     
     # Graph Database
-    'GraphDatabase',
+    # 'GraphDatabase',
     
     # Concept Extraction
     'ConceptExtractor',

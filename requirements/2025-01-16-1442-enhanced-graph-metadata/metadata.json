@@ -1,0 +1,30 @@
+{
+  "id": "enhanced-graph-metadata",
+  "started": "2025-01-16T14:42:00Z",
+  "lastUpdated": "2025-01-16T14:55:00Z",
+  "status": "complete",
+  "phase": "complete",
+  "progress": {
+    "discovery": { "answered": 5, "total": 5 },
+    "detail": { "answered": 5, "total": 5 }
+  },
+  "contextFiles": [
+    "src/knowledge/ontology.py",
+    "src/frontend/api/concepts.py", 
+    "src/frontend/static/js/main.js",
+    "src/frontend/static/css/main.css",
+    "src/frontend/templates/index.html",
+    "src/ingestion/math_detector.py",
+    "src/knowledge/concept_extractor.py",
+    "src/knowledge/graph_db.py"
+  ],
+  "relatedFeatures": [
+    "mathematical_content_detection",
+    "latex_rendering_mathjax",
+    "concept_extraction_automation", 
+    "graph_visualization_cytoscape",
+    "enhanced_metadata_schema",
+    "search_and_filtering",
+    "external_links_integration"
+  ]
+}

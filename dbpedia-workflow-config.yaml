@@ -1,0 +1,72 @@
+# AI Portfolio Optimizer Configuration for DBpedia Integration
+# Simplified configuration for external ontology workflow
+
+# Input and output directories
+input_dir: "./data/papers"
+text_dir: "./data/text"
+meta_dir: "./data/metadata"
+math_dir: "./data/math"
+chunk_dir: "./data/chunks"
+cache_dir: "./data/cache"
+
+# Logging
+log_level: "INFO"
+log_to_file: true
+log_file: "./logs/dbpedia_workflow.log"
+
+# Processing settings
+parallel_workers: 4
+skip_existing: false
+show_progress: true
+
+# Text processing
+chunk_size: 1000
+chunk_overlap: 100
+encoding: "utf-8"
+
+# Mathematical content
+extract_math: true
+math_ocr_fallback: false
+separate_math_files: true
+math_detection_threshold: 3
+
+# External ontology integration
+enable_external_ontologies: true
+enable_dbpedia: true
+enable_wikidata: true
+external_ontology_timeout: 30.0
+external_ontology_max_retries: 3
+external_ontology_retry_delay: 2.0
+
+# Concept extraction
+concept_extraction_enabled: true
+min_concept_frequency: 2
+max_concepts_per_chunk: 20
+concept_confidence_threshold: 0.6
+
+# Caching
+cache_ttl_hours: 168
+max_cache_size: 10000
+enable_cache_cleanup: true
+
+# Graph database
+enable_graph_db: true
+neo4j_uri: "neo4j://localhost:7687"
+neo4j_username: "neo4j"
+neo4j_password: "password"
+neo4j_database: "neo4j"
+
+# Vector database
+chroma_persist_directory: "./data/chroma_db"
+chroma_collection_name: "dbpedia_enriched_documents"
+
+# Web server
+web_host: "localhost"
+web_port: 8000
+web_debug: false
+
+# API keys (optional)
+openai_api_key: ""
+mathpix_app_id: ""
+mathpix_app_key: ""
+pinecone_api_key: ""

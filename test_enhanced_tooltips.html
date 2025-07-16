@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enhanced Graph Tooltips Test (FR4)</title>
+    <style>
+        /* Include the enhanced tooltip styles */
+        :root {
+            --primary-color: #2196F3;
+            --secondary-color: #607D8B;
+            --accent-color: #FF8A50;
+            --success-color: #4CAF50;
+            --warning-color: #FFC107;
+            --error-color: #F44336;
+            
+            --bg-primary: #ffffff;
+            --bg-secondary: #f5f5f5;
+            --bg-dark: #263238;
+            --text-primary: #212121;
+            --text-secondary: #757575;
+            --text-light: #ffffff;
+            
+            --shadow-lg: 0 4px 8px rgba(0,0,0,0.15);
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--bg-secondary);
+            margin: 0;
+            padding: 20px;
+        }
+
+        .test-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .test-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .test-area {
+            height: 400px;
+            background: #f9f9f9;
+            border: 2px dashed #ccc;
+            border-radius: 8px;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+
+        .mock-node {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            cursor: pointer;
+            margin: 10px;
+            transition: transform 0.2s ease;
+        }
+
+        .mock-node:hover {
+            transform: scale(1.1);
+        }
+
+        .mock-nodes {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .instructions {
+            text-align: center;
+            color: var(--text-secondary);
+            margin-bottom: 20px;
+        }
+
+        /* Enhanced tooltip styles (FR4) */
+        .enhanced-tooltip {
+            position: fixed;
+            background: var(--bg-dark);
+            color: var(--text-light);
+            border-radius: 8px;
+            font-size: 13px;
+            z-index: 3000;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            box-shadow: var(--shadow-lg);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            max-width: 300px;
+            min-width: 200px;
+        }
+
+        .enhanced-tooltip.visible {
+            opacity: 1;
+        }
+
+        .tooltip-header {
+            padding: 12px 16px 8px 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .tooltip-title {
+            font-weight: 600;
+            font-size: 14px;
+            color: var(--text-light);
+            margin-bottom: 4px;
+        }
+
+        .tooltip-type {
+            font-size: 11px;
+            color: var(--accent-color);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .tooltip-content {
+            padding: 8px 16px 12px 16px;
+        }
+
+        .tooltip-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+            font-size: 12px;
+        }
+
+        .tooltip-label {
+            color: rgba(255, 255, 255, 0.8);
+            font-weight: 500;
+            margin-right: 8px;
+            flex-shrink: 0;
+        }
+
+        .tooltip-value {
+            color: var(--text-light);
+            text-align: right;
+        }
+
+        .tooltip-value.complexity-beginner { color: var(--success-color); }
+        .tooltip-value.complexity-intermediate { color: var(--warning-color); }
+        .tooltip-value.complexity-advanced { color: var(--error-color); }
+
+        .tooltip-latex {
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .tooltip-math {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 8px;
+            border-radius: 4px;
+            margin-top: 4px;
+            text-align: center;
+        }
+
+        .tooltip-description {
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.9);
+            line-height: 1.4;
+            font-style: italic;
+        }
+
+        .feature-summary {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f0f8ff;
+            border-radius: 8px;
+            border-left: 4px solid var(--primary-color);
+        }
+    </style>
+    <!-- MathJax for LaTeX rendering -->
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script>
+        window.MathJax = {
+            tex: { inlineMath: [['\\(', '\\)']] },
+            chtml: { displayAlign: 'center' }
+        };
+    </script>
+</head>
+<body>
+    <div class="test-container">
+        <div class="test-header">
+            <h1>Enhanced Graph Node Tooltips Test (FR4)</h1>
+            <p>Interactive demonstration of enhanced tooltip functionality</p>
+        </div>
+
+        <div class="instructions">
+            <p>Hover over the nodes below to see enhanced tooltips with metadata, LaTeX rendering, and responsive positioning</p>
+        </div>
+
+        <div class="test-area">
+            <div class="mock-nodes">
+                <div class="mock-node" data-concept="portfolio_theory">PT</div>
+                <div class="mock-node" data-concept="black_scholes">BS</div>
+                <div class="mock-node" data-concept="linear_algebra">LA</div>
+                <div class="mock-node" data-concept="statistics">ST</div>
+            </div>
+        </div>
+
+        <div class="feature-summary">
+            <h3>FR4 Implementation Features:</h3>
+            <ul>
+                <li><strong>✓ FR4.1:</strong> 300ms hover delay with name, type, complexity, domain display</li>
+                <li><strong>✓ FR4.2:</strong> Professional design with MathJax LaTeX rendering</li>
+                <li><strong>✓ FR4.3:</strong> Performance optimized with caching and lazy loading</li>
+                <li><strong>✓ Responsive positioning:</strong> Tooltips avoid viewport overflow</li>
+                <li><strong>✓ Color-coded complexity:</strong> Green (beginner), Yellow (intermediate), Red (advanced)</li>
+                <li><strong>✓ Enhanced metadata:</strong> Prerequisites, confidence, frequency display</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // Mock concept data for testing
+        const mockConcepts = {
+            portfolio_theory: {
+                name: "Portfolio Theory",
+                type: "methodology",
+                complexity_level: "advanced",
+                domain: "finance",
+                prerequisites: ["linear algebra", "probability theory", "statistics"],
+                confidence: 0.92,
+                frequency: 120,
+                latex: "E[R_p] = w^T \\mu",
+                description: "Modern portfolio theory for investment optimization using mathematical models to construct optimal portfolios."
+            },
+            black_scholes: {
+                name: "Black-Scholes Model",
+                type: "model",
+                complexity_level: "advanced", 
+                domain: "finance",
+                prerequisites: ["stochastic calculus", "differential equations", "probability theory"],
+                confidence: 0.93,
+                frequency: 40,
+                latex: "C = S_0 N(d_1) - K e^{-rT} N(d_2)",
+                description: "Famous option pricing model using stochastic differential equations."
+            },
+            linear_algebra: {
+                name: "Linear Algebra",
+                type: "mathematics",
+                complexity_level: "intermediate",
+                domain: "mathematics",
+                prerequisites: [],
+                confidence: 0.95,
+                frequency: 85,
+                latex: "Ax = b",
+                description: "Mathematical foundation for vectors, matrices, and linear transformations."
+            },
+            statistics: {
+                name: "Basic Statistics",
+                type: "mathematics",
+                complexity_level: "beginner",
+                domain: "statistics", 
+                prerequisites: [],
+                confidence: 0.85,
+                frequency: 65,
+                latex: "\\bar{x} = \\frac{1}{n} \\sum_{i=1}^{n} x_i",
+                description: "Fundamental statistical concepts including mean, variance, and distributions."
+            }
+        };
+
+        class TooltipTester {
+            constructor() {
+                this.tooltip = null;
+                this.tooltipState = {
+                    visible: false,
+                    timeout: null,
+                    cache: new Map()
+                };
+                this.init();
+            }
+
+            init() {
+                // Create tooltip element
+                this.tooltip = document.createElement('div');
+                this.tooltip.className = 'enhanced-tooltip';
+                document.body.appendChild(this.tooltip);
+
+                // Setup event listeners
+                const nodes = document.querySelectorAll('.mock-node');
+                nodes.forEach(node => {
+                    node.addEventListener('mouseenter', (e) => this.handleNodeHover(e.target));
+                    node.addEventListener('mouseleave', () => this.handleNodeUnhover());
+                });
+            }
+
+            handleNodeHover(node) {
+                // Clear any existing timeout
+                if (this.tooltipState.timeout) {
+                    clearTimeout(this.tooltipState.timeout);
+                }
+
+                // Set 300ms delay (FR4.1)
+                this.tooltipState.timeout = setTimeout(() => {
+                    this.showEnhancedTooltip(node);
+                }, 300);
+            }
+
+            handleNodeUnhover() {
+                if (this.tooltipState.timeout) {
+                    clearTimeout(this.tooltipState.timeout);
+                    this.tooltipState.timeout = null;
+                }
+                this.hideTooltip();
+            }
+
+            showEnhancedTooltip(node) {
+                const conceptId = node.dataset.concept;
+                const conceptData = mockConcepts[conceptId];
+
+                if (!conceptData) return;
+
+                // Generate tooltip HTML (FR4.1, FR4.2)
+                const tooltipHTML = this.generateTooltipHTML(conceptData);
+                this.tooltip.innerHTML = tooltipHTML;
+
+                // Position tooltip responsively (FR4.2)
+                this.positionTooltip(node);
+
+                // Show tooltip
+                this.tooltip.classList.add('visible');
+                this.tooltipState.visible = true;
+
+                // Render LaTeX (FR4.2)
+                this.renderTooltipMath();
+            }
+
+            generateTooltipHTML(data) {
+                const { name, type, complexity_level, domain, prerequisites, confidence, frequency, latex, description } = data;
+                
+                return `
+                    <div class="tooltip-header">
+                        <div class="tooltip-title">${name}</div>
+                        <div class="tooltip-type">${type}</div>
+                    </div>
+                    <div class="tooltip-content">
+                        <div class="tooltip-row">
+                            <span class="tooltip-label">Complexity:</span>
+                            <span class="tooltip-value complexity-${complexity_level}">${complexity_level}</span>
+                        </div>
+                        <div class="tooltip-row">
+                            <span class="tooltip-label">Domain:</span>
+                            <span class="tooltip-value">${domain}</span>
+                        </div>
+                        <div class="tooltip-row">
+                            <span class="tooltip-label">Confidence:</span>
+                            <span class="tooltip-value">${(confidence * 100).toFixed(0)}%</span>
+                        </div>
+                        <div class="tooltip-row">
+                            <span class="tooltip-label">Frequency:</span>
+                            <span class="tooltip-value">${frequency}</span>
+                        </div>
+                        ${prerequisites.length > 0 ? `
+                        <div class="tooltip-row">
+                            <span class="tooltip-label">Prerequisites:</span>
+                            <span class="tooltip-value">${prerequisites.slice(0, 2).join(', ')}${prerequisites.length > 2 ? '...' : ''}</span>
+                        </div>` : ''}
+                        ${latex ? `
+                        <div class="tooltip-latex">
+                            <div class="tooltip-label">Formula:</div>
+                            <div class="tooltip-math">\\(${latex}\\)</div>
+                        </div>` : ''}
+                        <div class="tooltip-description">
+                            ${description}
+                        </div>
+                    </div>
+                `;
+            }
+
+            positionTooltip(node) {
+                const nodeRect = node.getBoundingClientRect();
+                
+                // Calculate initial position
+                let left = nodeRect.right + 10;
+                let top = nodeRect.top - 10;
+
+                // Get tooltip dimensions
+                this.tooltip.style.visibility = 'hidden';
+                this.tooltip.style.display = 'block';
+                const tooltipRect = this.tooltip.getBoundingClientRect();
+
+                // Adjust for viewport overflow (FR4.2)
+                if (left + tooltipRect.width > window.innerWidth) {
+                    left = nodeRect.left - tooltipRect.width - 10;
+                }
+                if (top + tooltipRect.height > window.innerHeight) {
+                    top = nodeRect.bottom + 10;
+                }
+
+                // Ensure tooltip stays on screen
+                left = Math.max(5, Math.min(left, window.innerWidth - tooltipRect.width - 5));
+                top = Math.max(5, Math.min(top, window.innerHeight - tooltipRect.height - 5));
+
+                this.tooltip.style.left = `${left}px`;
+                this.tooltip.style.top = `${top}px`;
+                this.tooltip.style.visibility = 'visible';
+            }
+
+            renderTooltipMath() {
+                // Render LaTeX with MathJax (FR4.2)
+                if (window.MathJax && window.MathJax.typesetPromise) {
+                    window.MathJax.typesetPromise([this.tooltip]).catch(err => {
+                        console.warn('MathJax rendering failed:', err);
+                    });
+                }
+            }
+
+            hideTooltip() {
+                this.tooltip.classList.remove('visible');
+                this.tooltipState.visible = false;
+            }
+        }
+
+        // Initialize tooltip tester when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            new TooltipTester();
+            console.log('Enhanced Graph Tooltips Test (FR4) initialized successfully!');
+        });
+    </script>
+</body>
+</html>

@@ -4,4 +4,5 @@
   and create new ones if needed this includes:
    - README.md (typically in root directory)
    - Specific .md files (typically in .claude directory)
+   - Documentation in docs/ directory if needed
 2. Commit and push to Git & Github

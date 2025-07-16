@@ -30,7 +30,7 @@ except ImportError:
 
 from .concept_cache import ConceptCache
 from .ontology import Concept, ConceptType
-from .utils import generate_cache_key, normalize_concept_name, get_concept_variants
+from .utils import generate_cache_key, normalize_concept_name, get_concept_variants, fix_acronym_casing
 from src.settings import Settings
 
 
@@ -235,9 +235,10 @@ class ExternalOntologyConnector(ABC):
         
         # Debug logging
         if len(scored_results) > 1:
-            self.logger.debug(f"Top matches for '{concept.name}':")
+            self.logger.info(f"MATCH SELECTION for '{concept.name}':")
             for i, (score, result) in enumerate(scored_results[:3]):
-                self.logger.debug(f"  {i+1}. {result.label} (score: {score:.3f})")
+                self.logger.info(f"  {i+1}. {result.label} (score: {score:.3f}) ID: {result.external_id}")
+            print(f"DEBUG BEST MATCH: {concept.name} -> '{scored_results[0][1].label}' (score: {scored_results[0][0]:.3f})")
         
         return scored_results[0][1]
     
@@ -430,6 +431,67 @@ class ExternalOntologyConnector(ABC):
         elif '(management)' in label_text:
             score += 0.7
         
+        # Specific concept improvements
+        concept_name_lower = concept.name.lower()
+        if concept_name_lower == 'capm':
+            # Prefer standard CAPM over consumption-based or other variants
+            if 'consumption-based' in label_text or 'ccapm' in label_text:
+                score -= 1.0  # Penalize consumption-based CAPM
+            elif external_data.label.lower() == 'capital asset pricing model':
+                score += 2.0  # Strong preference for standard CAPM
+                
+        elif concept_name_lower == 'correlation':
+            # Prefer general correlation over specific types like Kendall's tau
+            if 'kendall' in label_text or 'tau' in label_text or 'rank correlation' in label_text:
+                score -= 1.5  # Penalize Kendall's tau
+            elif 'pearson' in label_text or external_data.label.lower() == 'correlation':
+                score += 1.5  # Prefer Pearson or general correlation
+                
+        elif concept_name_lower == 'efficient frontier':
+            # Prefer standard efficient frontier over specialized variants
+            if 'resampled' in label_text:
+                score -= 1.0  # Penalize resampled efficient frontier
+            elif external_data.label.lower() == 'efficient frontier':
+                score += 2.0  # Strong preference for standard efficient frontier
+                
+        elif concept_name_lower == 'risk':
+            # Prefer financial risk over general risk
+            if 'financial' in label_text or 'investment' in label_text or 'market' in label_text:
+                score += 1.5  # Strong preference for financial risk
+            elif external_data.label.lower() == 'risk' and len(external_data.label) <= 5:
+                score -= 0.5  # Penalize very general "Risk" concept
+                
+        elif concept_name_lower == 'sharpe ratio':
+            # Prefer English DBpedia over other languages
+            external_uri = external_data.external_id if external_data.external_id else ''
+            if 'de.dbpedia.org' in external_uri or 'fr.dbpedia.org' in external_uri:
+                score -= 2.0  # Strongly penalize non-English DBpedia
+            elif 'dbpedia.org/resource' in external_uri and not any(lang in external_uri for lang in ['de.', 'fr.', 'es.', 'it.']):
+                score += 2.0  # Strongly prefer English DBpedia
+            elif external_data.label.lower() == 'sharpe ratio':
+                score += 1.0  # Prefer exact label match
+                
+        elif concept_name_lower == 'mean variance':
+            # Should get Modern Portfolio Theory, not statistical variance concepts
+            if 'portfolio' in label_text or 'markowitz' in label_text or 'modern portfolio theory' in label_text:
+                score += 2.0  # Strong preference for portfolio theory
+            elif 'standardized mean' in label_text or 'contrast variable' in label_text:
+                score -= 2.0  # Penalize statistics concepts
+                
+        elif concept_name_lower == 'variance':
+            # Prefer statistical variance over ANOVA
+            if 'analysis of variance' in label_text or 'anova' in label_text:
+                score -= 1.0  # Penalize ANOVA
+            elif external_data.label.lower() == 'variance' and 'statistics' in (external_data.description or '').lower():
+                score += 1.5  # Prefer statistical variance
+                
+        elif concept_name_lower == 'asset allocation':
+            # Prefer general asset allocation over dynamic/specific variants
+            if 'dynamic' in label_text or 'tactical' in label_text:
+                score -= 0.5  # Slight preference for general concept
+            elif external_data.label.lower() == 'asset allocation':
+                score += 1.0  # Prefer general asset allocation
+        
         # Apply heavy penalties for geographic locations
         for geo_indicator in geographic_indicators:
             if geo_indicator in text_to_check:
@@ -490,6 +552,9 @@ class ExternalOntologyConnector(ABC):
     
     def _apply_enrichment(self, concept: Concept, external_data: ExternalConceptData) -> Concept:
         """Apply external data to enrich a concept with domain filtering."""
+        # Fix acronym casing for proper display
+        concept.name = fix_acronym_casing(concept.name)
+        
         # Add external description if concept doesn't have one
         if not concept.description and external_data.description:
             concept.description = external_data.description
@@ -679,7 +744,19 @@ class DBpediaConnector(ExternalOntologyConnector):
             'black-scholes': ['Black-Scholes model', 'Black-Scholes equation', 'Black-Scholes formula'],
             'black scholes': ['Black-Scholes model', 'Black-Scholes equation', 'Black-Scholes formula'],
             'beta': ['Beta (finance)', 'Systematic risk', 'Market beta', 'Financial beta'],
-            'alpha': ['Alpha (finance)', 'Jensen alpha', 'Portfolio alpha', 'Abnormal return']
+            'alpha': ['Alpha (finance)', 'Jensen alpha', 'Portfolio alpha', 'Abnormal return'],
+            'capm': ['Capital asset pricing model', 'CAPM model'],  # Prefer standard CAPM over consumption-based
+            'correlation': ['Correlation coefficient', 'Statistical correlation', 'Pearson correlation'],  # Prefer general correlation
+            'efficient frontier': ['Efficient frontier', 'Efficient portfolio frontier'],  # Prefer standard over resampled
+            'rate of return': ['Rate of return', 'Return on investment', 'Investment return'],
+            'return': ['Rate of return', 'Return on investment', 'Investment return'],
+            'sharpe ratio': ['Sharpe ratio', 'Sharpe index', 'Reward-to-volatility ratio'],
+            'expected return': ['Expected return', 'Expected value of return', 'Mean return', 'Expected rate of return'],
+            'risk': ['Financial risk', 'Investment risk', 'Market risk'],
+            'mean variance': ['Modern portfolio theory', 'Mean variance optimization', 'Markowitz theory'],
+            'asset allocation': ['Asset allocation', 'Portfolio allocation', 'Strategic asset allocation'],
+            'variance': ['Variance (statistics)', 'Statistical variance', 'Sample variance'],
+            'diversification': ['Diversification (finance)', 'Portfolio diversification', 'Risk diversification']
         }
         
         if HAS_SPARQL:
@@ -1199,7 +1276,12 @@ class ExternalOntologyManager:
                     successful_enrichments += 1
                     
             except Exception as e:
-                self.logger.warning(f"Failed to enrich concept '{concept.name}' with {connector_name}: {type(e).__name__}")
+                if isinstance(e, AttributeError):
+                    import traceback
+                    self.logger.error(f"AttributeError enriching '{concept.name}' with {connector_name}: {e}")
+                    self.logger.error(f"Traceback: {traceback.format_exc()}")
+                else:
+                    self.logger.warning(f"Failed to enrich concept '{concept.name}' with {connector_name}: {type(e).__name__}")
                 failed_connectors.append(connector_name)
                 continue
         

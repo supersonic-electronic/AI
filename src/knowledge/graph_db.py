@@ -11,8 +11,17 @@ from contextlib import contextmanager
 import json
 from datetime import datetime
 
-from neo4j import GraphDatabase, Session, Transaction
-from neo4j.exceptions import ServiceUnavailable, AuthError, ClientError
+try:
+    from neo4j import GraphDatabase, Session, Transaction
+    from neo4j.exceptions import ServiceUnavailable, AuthError, ClientError
+except ImportError:
+    # Neo4j not available - provide stubs for basic functionality
+    GraphDatabase = None
+    Session = None
+    Transaction = None
+    ServiceUnavailable = Exception
+    AuthError = Exception
+    ClientError = Exception
 
 from .ontology import Concept, Relationship, ConceptType, RelationshipType, FinancialMathOntology
 from src.settings import Settings
@@ -47,6 +56,11 @@ class GraphDatabase:
     
     def _initialize_driver(self) -> None:
         """Initialize the Neo4j driver."""
+        if GraphDatabase is None:
+            self.logger.warning("Neo4j not available - graph database functionality disabled")
+            self.driver = None
+            return
+            
         try:
             self.driver = GraphDatabase.driver(
                 self.uri,
@@ -68,6 +82,9 @@ class GraphDatabase:
     
     def _create_constraints(self) -> None:
         """Create database constraints for data integrity."""
+        if self.driver is None:
+            return
+            
         constraints = [
             "CREATE CONSTRAINT concept_id_unique IF NOT EXISTS FOR (c:Concept) REQUIRE c.id IS UNIQUE",
             "CREATE CONSTRAINT concept_name_exists IF NOT EXISTS FOR (c:Concept) REQUIRE c.name IS NOT NULL",
@@ -85,6 +102,9 @@ class GraphDatabase:
     
     def _create_indexes(self) -> None:
         """Create database indexes for performance."""
+        if self.driver is None:
+            return
+            
         indexes = [
             "CREATE INDEX concept_type_index IF NOT EXISTS FOR (c:Concept) ON (c.type)",
             "CREATE INDEX concept_name_index IF NOT EXISTS FOR (c:Concept) ON (c.name)",
@@ -105,6 +125,10 @@ class GraphDatabase:
     @contextmanager
     def session(self):
         """Context manager for database sessions."""
+        if self.driver is None:
+            yield None
+            return
+            
         session = self.driver.session(database=self.database)
         try:
             yield session
@@ -148,6 +172,9 @@ class GraphDatabase:
         
         try:
             with self.session() as session:
+                if session is None:
+                    self.logger.warning(f"Cannot add concept {concept.name}: Neo4j not available")
+                    return False
                 result = session.run(query, parameters)
                 record = result.single()
                 if record:
@@ -158,4 +185,254 @@ class GraphDatabase:
             self.logger.error(f"Failed to add concept {concept.name}: {e}")
             return False
     
-    def add_relationship(self, relationship: Relationship) -> bool:\n        \"\"\"Add a relationship to the graph database.\"\"\"\n        query = \"\"\"\n        MATCH (source:Concept {id: $source_id})\n        MATCH (target:Concept {id: $target_id})\n        MERGE (source)-[r:RELATED_TO {type: $rel_type}]->(target)\n        SET r.confidence = $confidence,\n            r.properties = $properties,\n            r.source_document = $source_document,\n            r.source_page = $source_page,\n            r.context = $context,\n            r.created_at = $created_at,\n            r.updated_at = $updated_at\n        RETURN r\n        \"\"\"\n        \n        parameters = {\n            \"source_id\": relationship.source_concept_id,\n            \"target_id\": relationship.target_concept_id,\n            \"rel_type\": relationship.relationship_type.value,\n            \"confidence\": relationship.confidence,\n            \"properties\": relationship.properties,\n            \"source_document\": relationship.source_document,\n            \"source_page\": relationship.source_page,\n            \"context\": relationship.context,\n            \"created_at\": datetime.now().isoformat(),\n            \"updated_at\": datetime.now().isoformat()\n        }\n        \n        try:\n            with self.session() as session:\n                result = session.run(query, parameters)\n                record = result.single()\n                if record:\n                    self.logger.debug(f\"Added relationship: {relationship.source_concept_id} -> {relationship.target_concept_id}\")\n                    return True\n                return False\n        except Exception as e:\n            self.logger.error(f\"Failed to add relationship: {e}\")\n            return False\n    \n    def get_concept(self, concept_id: str) -> Optional[Dict[str, Any]]:\n        \"\"\"Retrieve a concept by ID.\"\"\"\n        query = \"MATCH (c:Concept {id: $id}) RETURN c\"\n        \n        try:\n            with self.session() as session:\n                result = session.run(query, {\"id\": concept_id})\n                record = result.single()\n                if record:\n                    return dict(record[\"c\"])\n                return None\n        except Exception as e:\n            self.logger.error(f\"Failed to get concept {concept_id}: {e}\")\n            return None\n    \n    def get_concepts_by_type(self, concept_type: ConceptType) -> List[Dict[str, Any]]:\n        \"\"\"Get all concepts of a specific type.\"\"\"\n        query = \"MATCH (c:Concept {type: $type}) RETURN c ORDER BY c.name\"\n        \n        try:\n            with self.session() as session:\n                result = session.run(query, {\"type\": concept_type.value})\n                return [dict(record[\"c\"]) for record in result]\n        except Exception as e:\n            self.logger.error(f\"Failed to get concepts by type {concept_type}: {e}\")\n            return []\n    \n    def get_related_concepts(self, concept_id: str, \n                           relationship_type: Optional[RelationshipType] = None,\n                           direction: str = \"both\") -> List[Dict[str, Any]]:\n        \"\"\"Get concepts related to a given concept.\"\"\"\n        if direction == \"outgoing\":\n            query = \"MATCH (c:Concept {id: $id})-[r:RELATED_TO]->(related:Concept)\"\n        elif direction == \"incoming\":\n            query = \"MATCH (c:Concept {id: $id})<-[r:RELATED_TO]-(related:Concept)\"\n        else:  # both\n            query = \"MATCH (c:Concept {id: $id})-[r:RELATED_TO]-(related:Concept)\"\n        \n        if relationship_type:\n            query += \" WHERE r.type = $rel_type\"\n        \n        query += \" RETURN related, r ORDER BY r.confidence DESC\"\n        \n        parameters = {\"id\": concept_id}\n        if relationship_type:\n            parameters[\"rel_type\"] = relationship_type.value\n        \n        try:\n            with self.session() as session:\n                result = session.run(query, parameters)\n                return [\n                    {\n                        \"concept\": dict(record[\"related\"]),\n                        \"relationship\": dict(record[\"r\"])\n                    }\n                    for record in result\n                ]\n        except Exception as e:\n            self.logger.error(f\"Failed to get related concepts for {concept_id}: {e}\")\n            return []\n    \n    def search_concepts(self, query_text: str, limit: int = 10) -> List[Dict[str, Any]]:\n        \"\"\"Search for concepts by name or description.\"\"\"\n        query = \"\"\"\n        MATCH (c:Concept)\n        WHERE c.name CONTAINS $query OR c.description CONTAINS $query\n           OR any(alias IN c.aliases WHERE alias CONTAINS $query)\n        RETURN c\n        ORDER BY c.confidence DESC\n        LIMIT $limit\n        \"\"\"\n        \n        try:\n            with self.session() as session:\n                result = session.run(query, {\"query\": query_text, \"limit\": limit})\n                return [dict(record[\"c\"]) for record in result]\n        except Exception as e:\n            self.logger.error(f\"Failed to search concepts: {e}\")\n            return []\n    \n    def get_concept_path(self, source_id: str, target_id: str, \n                        max_length: int = 5) -> List[Dict[str, Any]]:\n        \"\"\"Find the shortest path between two concepts.\"\"\"\n        query = \"\"\"\n        MATCH path = shortestPath((source:Concept {id: $source_id})\n                                 -[:RELATED_TO*1..{max_length}]-\n                                 (target:Concept {id: $target_id}))\n        RETURN path\n        \"\"\".format(max_length=max_length)\n        \n        try:\n            with self.session() as session:\n                result = session.run(query, {\"source_id\": source_id, \"target_id\": target_id})\n                record = result.single()\n                if record:\n                    path = record[\"path\"]\n                    return [\n                        {\n                            \"concept\": dict(node),\n                            \"relationship\": dict(rel) if rel else None\n                        }\n                        for node, rel in zip(path.nodes, path.relationships + [None])\n                    ]\n                return []\n        except Exception as e:\n            self.logger.error(f\"Failed to find path between {source_id} and {target_id}: {e}\")\n            return []\n    \n    def get_concept_neighbors(self, concept_id: str, depth: int = 2) -> Dict[str, Any]:\n        \"\"\"Get all concepts within a specified depth from a given concept.\"\"\"\n        query = \"\"\"\n        MATCH (c:Concept {id: $id})\n        CALL apoc.path.subgraphNodes(c, {\n            relationshipFilter: \"RELATED_TO\",\n            maxLevel: $depth\n        }) YIELD node\n        WITH c, collect(node) AS neighbors\n        MATCH (c)-[r:RELATED_TO*1..{depth}]-(neighbor)\n        RETURN c, neighbors, collect(r) AS relationships\n        \"\"\".format(depth=depth)\n        \n        try:\n            with self.session() as session:\n                result = session.run(query, {\"id\": concept_id, \"depth\": depth})\n                record = result.single()\n                if record:\n                    return {\n                        \"center\": dict(record[\"c\"]),\n                        \"neighbors\": [dict(node) for node in record[\"neighbors\"]],\n                        \"relationships\": [dict(rel) for rel in record[\"relationships\"]]\n                    }\n                return {}\n        except Exception as e:\n            self.logger.error(f\"Failed to get neighbors for {concept_id}: {e}\")\n            return {}\n    \n    def get_document_concepts(self, document_name: str) -> List[Dict[str, Any]]:\n        \"\"\"Get all concepts from a specific document.\"\"\"\n        query = \"\"\"\n        MATCH (c:Concept {source_document: $document})\n        RETURN c\n        ORDER BY c.source_page, c.name\n        \"\"\"\n        \n        try:\n            with self.session() as session:\n                result = session.run(query, {\"document\": document_name})\n                return [dict(record[\"c\"]) for record in result]\n        except Exception as e:\n            self.logger.error(f\"Failed to get concepts from document {document_name}: {e}\")\n            return []\n    \n    def get_statistics(self) -> Dict[str, Any]:\n        \"\"\"Get database statistics.\"\"\"\n        queries = {\n            \"total_concepts\": \"MATCH (c:Concept) RETURN count(c) AS count\",\n            \"total_relationships\": \"MATCH ()-[r:RELATED_TO]->() RETURN count(r) AS count\",\n            \"concepts_by_type\": \"MATCH (c:Concept) RETURN c.type AS type, count(c) AS count ORDER BY count DESC\",\n            \"relationships_by_type\": \"MATCH ()-[r:RELATED_TO]->() RETURN r.type AS type, count(r) AS count ORDER BY count DESC\",\n            \"documents_processed\": \"MATCH (c:Concept) WHERE c.source_document IS NOT NULL RETURN count(DISTINCT c.source_document) AS count\"\n        }\n        \n        stats = {}\n        try:\n            with self.session() as session:\n                for stat_name, query in queries.items():\n                    result = session.run(query)\n                    if stat_name in [\"concepts_by_type\", \"relationships_by_type\"]:\n                        stats[stat_name] = [{\"type\": record[\"type\"], \"count\": record[\"count\"]} for record in result]\n                    else:\n                        record = result.single()\n                        stats[stat_name] = record[\"count\"] if record else 0\n        except Exception as e:\n            self.logger.error(f\"Failed to get statistics: {e}\")\n        \n        return stats\n    \n    def clear_database(self) -> bool:\n        \"\"\"Clear all data from the database (use with caution).\"\"\"\n        query = \"MATCH (n) DETACH DELETE n\"\n        \n        try:\n            with self.session() as session:\n                session.run(query)\n                self.logger.info(\"Database cleared successfully\")\n                return True\n        except Exception as e:\n            self.logger.error(f\"Failed to clear database: {e}\")\n            return False\n    \n    def close(self) -> None:\n        \"\"\"Close the database connection.\"\"\"\n        if self.driver:\n            self.driver.close()\n            self.logger.info(\"Neo4j connection closed\")\n    \n    def __del__(self):\n        \"\"\"Cleanup when object is destroyed.\"\"\"\n        self.close()
+    def add_relationship(self, relationship: Relationship) -> bool:
+        """Add a relationship to the graph database."""
+        query = """
+        MATCH (source:Concept {id: $source_id})
+        MATCH (target:Concept {id: $target_id})
+        MERGE (source)-[r:RELATED_TO {type: $rel_type}]->(target)
+        SET r.confidence = $confidence,
+            r.properties = $properties,
+            r.source_document = $source_document,
+            r.source_page = $source_page,
+            r.context = $context,
+            r.created_at = $created_at,
+            r.updated_at = $updated_at
+        RETURN r
+        """
+        
+        parameters = {
+            "source_id": relationship.source_concept_id,
+            "target_id": relationship.target_concept_id,
+            "rel_type": relationship.relationship_type.value,
+            "confidence": relationship.confidence,
+            "properties": relationship.properties,
+            "source_document": relationship.source_document,
+            "source_page": relationship.source_page,
+            "context": relationship.context,
+            "created_at": datetime.now().isoformat(),
+            "updated_at": datetime.now().isoformat()
+        }
+        
+        try:
+            with self.session() as session:
+                if session is None:
+                    self.logger.warning(f"Cannot add relationship: Neo4j not available")
+                    return False
+                result = session.run(query, parameters)
+                record = result.single()
+                if record:
+                    self.logger.debug(f"Added relationship: {relationship.source_concept_id} -> {relationship.target_concept_id}")
+                    return True
+                return False
+        except Exception as e:
+            self.logger.error(f"Failed to add relationship: {e}")
+            return False
+    
+    def get_concept(self, concept_id: str) -> Optional[Dict[str, Any]]:
+        """Retrieve a concept by ID."""
+        query = "MATCH (c:Concept {id: $id}) RETURN c"
+        
+        try:
+            with self.session() as session:
+                if session is None:
+                    return None
+                result = session.run(query, {"id": concept_id})
+                record = result.single()
+                if record:
+                    return dict(record["c"])
+                return None
+        except Exception as e:
+            self.logger.error(f"Failed to get concept {concept_id}: {e}")
+            return None
+    
+    def get_concepts_by_type(self, concept_type: ConceptType) -> List[Dict[str, Any]]:
+        """Get all concepts of a specific type."""
+        query = "MATCH (c:Concept {type: $type}) RETURN c ORDER BY c.name"
+        
+        try:
+            with self.session() as session:
+                if session is None:
+                    return []
+                result = session.run(query, {"type": concept_type.value})
+                return [dict(record["c"]) for record in result]
+        except Exception as e:
+            self.logger.error(f"Failed to get concepts by type {concept_type}: {e}")
+            return []
+    
+    def get_related_concepts(self, concept_id: str, 
+                           relationship_type: Optional[RelationshipType] = None,
+                           direction: str = "both") -> List[Dict[str, Any]]:
+        """Get concepts related to a given concept."""
+        if direction == "outgoing":
+            query = "MATCH (c:Concept {id: $id})-[r:RELATED_TO]->(related:Concept)"
+        elif direction == "incoming":
+            query = "MATCH (c:Concept {id: $id})<-[r:RELATED_TO]-(related:Concept)"
+        else:  # both
+            query = "MATCH (c:Concept {id: $id})-[r:RELATED_TO]-(related:Concept)"
+        
+        if relationship_type:
+            query += " WHERE r.type = $rel_type"
+        
+        query += " RETURN related, r ORDER BY r.confidence DESC"
+        
+        parameters = {"id": concept_id}
+        if relationship_type:
+            parameters["rel_type"] = relationship_type.value
+        
+        try:
+            with self.session() as session:
+                if session is None:
+                    return []
+                result = session.run(query, parameters)
+                return [
+                    {
+                        "concept": dict(record["related"]),
+                        "relationship": dict(record["r"])
+                    }
+                    for record in result
+                ]
+        except Exception as e:
+            self.logger.error(f"Failed to get related concepts for {concept_id}: {e}")
+            return []
+    
+    def search_concepts(self, query_text: str, limit: int = 10) -> List[Dict[str, Any]]:
+        """Search for concepts by name or description."""
+        query = """
+        MATCH (c:Concept)
+        WHERE c.name CONTAINS $query OR c.description CONTAINS $query
+           OR any(alias IN c.aliases WHERE alias CONTAINS $query)
+        RETURN c
+        ORDER BY c.confidence DESC
+        LIMIT $limit
+        """
+        
+        try:
+            with self.session() as session:
+                if session is None:
+                    return []
+                result = session.run(query, {"query": query_text, "limit": limit})
+                return [dict(record["c"]) for record in result]
+        except Exception as e:
+            self.logger.error(f"Failed to search concepts: {e}")
+            return []
+    
+    def get_concept_path(self, source_id: str, target_id: str, 
+                        max_length: int = 5) -> List[Dict[str, Any]]:
+        """Find the shortest path between two concepts."""
+        query = """
+        MATCH path = shortestPath((source:Concept {id: $source_id})
+                                 -[:RELATED_TO*1..{max_length}]-
+                                 (target:Concept {id: $target_id}))
+        RETURN path
+        """.format(max_length=max_length)
+        
+        try:
+            with self.session() as session:
+                result = session.run(query, {"source_id": source_id, "target_id": target_id})
+                record = result.single()
+                if record:
+                    path = record["path"]
+                    return [
+                        {
+                            "concept": dict(node),
+                            "relationship": dict(rel) if rel else None
+                        }
+                        for node, rel in zip(path.nodes, path.relationships + [None])
+                    ]
+                return []
+        except Exception as e:
+            self.logger.error(f"Failed to find path between {source_id} and {target_id}: {e}")
+            return []
+    
+    def get_concept_neighbors(self, concept_id: str, depth: int = 2) -> Dict[str, Any]:
+        """Get all concepts within a specified depth from a given concept."""
+        query = """
+        MATCH (c:Concept {id: $id})
+        CALL apoc.path.subgraphNodes(c, {
+            relationshipFilter: "RELATED_TO",
+            maxLevel: $depth
+        }) YIELD node
+        WITH c, collect(node) AS neighbors
+        MATCH (c)-[r:RELATED_TO*1..{depth}]-(neighbor)
+        RETURN c, neighbors, collect(r) AS relationships
+        """.format(depth=depth)
+        
+        try:
+            with self.session() as session:
+                result = session.run(query, {"id": concept_id, "depth": depth})
+                record = result.single()
+                if record:
+                    return {
+                        "center": dict(record["c"]),
+                        "neighbors": [dict(node) for node in record["neighbors"]],
+                        "relationships": [dict(rel) for rel in record["relationships"]]
+                    }
+                return {}
+        except Exception as e:
+            self.logger.error(f"Failed to get neighbors for {concept_id}: {e}")
+            return {}
+    
+    def get_document_concepts(self, document_name: str) -> List[Dict[str, Any]]:
+        """Get all concepts from a specific document."""
+        query = """
+        MATCH (c:Concept {source_document: $document})
+        RETURN c
+        ORDER BY c.source_page, c.name
+        """
+        
+        try:
+            with self.session() as session:
+                result = session.run(query, {"document": document_name})
+                return [dict(record["c"]) for record in result]
+        except Exception as e:
+            self.logger.error(f"Failed to get concepts from document {document_name}: {e}")
+            return []
+    
+    def get_statistics(self) -> Dict[str, Any]:
+        """Get database statistics."""
+        queries = {
+            "total_concepts": "MATCH (c:Concept) RETURN count(c) AS count",
+            "total_relationships": "MATCH ()-[r:RELATED_TO]->() RETURN count(r) AS count",
+            "concepts_by_type": "MATCH (c:Concept) RETURN c.type AS type, count(c) AS count ORDER BY count DESC",
+            "relationships_by_type": "MATCH ()-[r:RELATED_TO]->() RETURN r.type AS type, count(r) AS count ORDER BY count DESC",
+            "documents_processed": "MATCH (c:Concept) WHERE c.source_document IS NOT NULL RETURN count(DISTINCT c.source_document) AS count"
+        }
+        
+        stats = {}
+        try:
+            with self.session() as session:
+                for stat_name, query in queries.items():
+                    result = session.run(query)
+                    if stat_name in ["concepts_by_type", "relationships_by_type"]:
+                        stats[stat_name] = [{"type": record["type"], "count": record["count"]} for record in result]
+                    else:
+                        record = result.single()
+                        stats[stat_name] = record["count"] if record else 0
+        except Exception as e:
+            self.logger.error(f"Failed to get statistics: {e}")
+        
+        return stats
+    
+    def clear_database(self) -> bool:
+        """Clear all data from the database (use with caution)."""
+        query = "MATCH (n) DETACH DELETE n"
+        
+        try:
+            with self.session() as session:
+                session.run(query)
+                self.logger.info("Database cleared successfully")
+                return True
+        except Exception as e:
+            self.logger.error(f"Failed to clear database: {e}")
+            return False
+    
+    def close(self) -> None:
+        """Close the database connection."""
+        if self.driver:
+            self.driver.close()
+            self.logger.info("Neo4j connection closed")
+    
+    def __del__(self):
+        """Cleanup when object is destroyed."""
+        self.close()

@@ -1,0 +1,19 @@
+{
+  "id": "enrichment-consistency",
+  "started": "2025-07-16T15:23:00Z",
+  "lastUpdated": "2025-07-16T15:23:00Z",
+  "status": "active",
+  "phase": "complete",
+  "progress": {
+    "discovery": { "answered": 5, "total": 5 },
+    "detail": { "answered": 5, "total": 5 }
+  },
+  "contextFiles": [
+    "src/knowledge/external_ontologies.py",
+    "src/knowledge/concept_extractor.py", 
+    "src/knowledge/concept_cache.py",
+    "src/frontend/api/graph.py",
+    "config.yaml"
+  ],
+  "relatedFeatures": []
+}

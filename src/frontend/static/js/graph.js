@@ -68,6 +68,10 @@ class GraphManager {
             'application': '#795548',   // Material Brown
             'limitation': '#F44336',    // Material Red
             
+            // DBpedia concepts - Distinct but harmonious colors
+            'dbpedia_concept': '#8E24AA', // Material Purple 600
+            'dbpedia_enriched': '#4CAF50', // Material Green (for enriched local concepts)
+            
             // Default color for unknown types
             'unknown': '#9E9E9E'        // Material Grey
         };
@@ -176,7 +180,22 @@ class GraphManager {
                 style: {
                     'background-color': (ele) => {
                         const nodeType = ele.data('type') || 'unknown';
-                        return this.colorScheme[nodeType] || this.colorScheme['unknown'];
+                        const isDBpediaEnriched = ele.data('dbpedia_enriched') || false;
+                        const externalSource = ele.data('external_source') || 'local';
+                        const isNeighboringNode = ele.data('is_neighboring_node') || false;
+                        
+                        // Use special colors for neighboring DBpedia nodes
+                        if (isNeighboringNode || externalSource === 'dbpedia_related') {
+                            return '#B39DDB'; // Light purple for neighboring nodes
+                        }
+                        // Use special colors for DBpedia concepts
+                        else if (externalSource === 'dbpedia' && nodeType === 'dbpedia_concept') {
+                            return this.colorScheme['dbpedia_concept'];
+                        } else if (isDBpediaEnriched) {
+                            return this.colorScheme['dbpedia_enriched'];
+                        } else {
+                            return this.colorScheme[nodeType] || this.colorScheme['unknown'];
+                        }
                     },
                     'label': 'data(name)',
                     'font-size': '12px',
@@ -192,15 +211,61 @@ class GraphManager {
                     'text-outline-width': '2px',
                     'width': (ele) => {
                         const frequency = ele.data('frequency') || 0;
-                        return Math.max(30, Math.min(80, 30 + (frequency / 100)));
+                        const confidence = ele.data('confidence') || 0;
+                        const isNeighboringNode = ele.data('is_neighboring_node') || false;
+                        
+                        if (isNeighboringNode) {
+                            // Size neighboring nodes based on confidence
+                            return Math.max(25, Math.min(60, 25 + (confidence * 35)));
+                        } else {
+                            // Size original nodes based on frequency
+                            return Math.max(30, Math.min(80, 30 + (frequency / 100)));
+                        }
                     },
                     'height': (ele) => {
                         const frequency = ele.data('frequency') || 0;
-                        return Math.max(30, Math.min(80, 30 + (frequency / 100)));
+                        const confidence = ele.data('confidence') || 0;
+                        const isNeighboringNode = ele.data('is_neighboring_node') || false;
+                        
+                        if (isNeighboringNode) {
+                            // Size neighboring nodes based on confidence
+                            return Math.max(25, Math.min(60, 25 + (confidence * 35)));
+                        } else {
+                            // Size original nodes based on frequency
+                            return Math.max(30, Math.min(80, 30 + (frequency / 100)));
+                        }
                     },
-                    'border-width': '2px',
-                    'border-color': '#ffffff',
-                    'border-opacity': 0.8,
+                    'border-width': (ele) => {
+                        const isDBpediaEnriched = ele.data('dbpedia_enriched') || false;
+                        const externalSource = ele.data('external_source') || 'local';
+                        return (isDBpediaEnriched || externalSource === 'dbpedia') ? '3px' : '2px';
+                    },
+                    'border-color': (ele) => {
+                        const isDBpediaEnriched = ele.data('dbpedia_enriched') || false;
+                        const externalSource = ele.data('external_source') || 'local';
+                        const isNeighboringNode = ele.data('is_neighboring_node') || false;
+                        
+                        if (isNeighboringNode || externalSource === 'dbpedia_related') {
+                            return '#8E24AA'; // Purple border for neighboring nodes
+                        } else if (externalSource === 'dbpedia') {
+                            return '#8E24AA'; // Purple border for pure DBpedia concepts
+                        } else if (isDBpediaEnriched) {
+                            return '#4CAF50'; // Green border for enriched local concepts
+                        } else {
+                            return '#ffffff'; // Default white border
+                        }
+                    },
+                    'border-style': (ele) => {
+                        const isNeighboringNode = ele.data('is_neighboring_node') || false;
+                        const externalSource = ele.data('external_source') || 'local';
+                        
+                        if (isNeighboringNode || externalSource === 'dbpedia_related') {
+                            return 'dashed'; // Dashed border for neighboring nodes
+                        } else {
+                            return 'solid'; // Solid border for regular nodes
+                        }
+                    },
+                    'border-opacity': 0.9,
                     'opacity': 0.9,
                     'transition-property': 'background-color, border-color, opacity',
                     'transition-duration': '0.2s'
@@ -234,12 +299,42 @@ class GraphManager {
                 style: {
                     'width': (ele) => {
                         const confidence = ele.data('confidence') || 0.5;
+                        const sourceType = ele.data('source_type') || 'derived';
+                        // Make external relationship edges slightly thicker for visibility
+                        if (sourceType === 'external_relation' || sourceType === 'cross_reference') {
+                            return Math.max(2, confidence * 5);
+                        }
                         return Math.max(1, confidence * 4);
                     },
-                    'line-color': '#cccccc',
-                    'target-arrow-color': '#cccccc',
+                    'line-color': (ele) => {
+                        const sourceType = ele.data('source_type') || 'derived';
+                        if (sourceType === 'external_relation') {
+                            return '#8E24AA'; // Purple for external relations
+                        } else if (sourceType === 'cross_reference') {
+                            return '#FF8A50'; // Orange for cross-references
+                        }
+                        return '#cccccc'; // Default gray
+                    },
+                    'target-arrow-color': (ele) => {
+                        const sourceType = ele.data('source_type') || 'derived';
+                        if (sourceType === 'external_relation') {
+                            return '#8E24AA';
+                        } else if (sourceType === 'cross_reference') {
+                            return '#FF8A50';
+                        }
+                        return '#cccccc';
+                    },
                     'target-arrow-shape': 'triangle',
-                    'curve-style': 'bezier',
+                    'curve-style': (ele) => {
+                        const sourceType = ele.data('source_type') || 'derived';
+                        // Use different curve styles for different relationship types
+                        if (sourceType === 'external_relation') {
+                            return 'unbundled-bezier'; // More pronounced curves
+                        } else if (sourceType === 'cross_reference') {
+                            return 'bezier';
+                        }
+                        return 'bezier'; // Default curved
+                    },
                     'opacity': 0.6,
                     'label': '',  // Hide edge labels by default
                     'font-size': '10px',
@@ -478,14 +573,42 @@ class GraphManager {
             });
         }
         
+        // Apply data source filter
+        if (filters.dataSource && filters.dataSource !== '') {
+            this.cy.nodes().forEach(node => {
+                const externalSource = node.data('external_source') || 'local';
+                const isDBpediaEnriched = node.data('dbpedia_enriched') || false;
+                
+                let nodeSource = 'local';
+                if (externalSource === 'dbpedia') {
+                    nodeSource = 'dbpedia';
+                } else if (isDBpediaEnriched) {
+                    nodeSource = 'enriched';
+                }
+                
+                if (nodeSource !== filters.dataSource) {
+                    node.addClass('hidden');
+                    node.connectedEdges().addClass('hidden');
+                }
+            });
+        }
+        
         // Apply search filter
         if (filters.searchTerm && filters.searchTerm.trim() !== '') {
             const searchTerm = filters.searchTerm.toLowerCase();
             this.cy.nodes().forEach(node => {
                 const name = (node.data('name') || '').toLowerCase();
                 const description = (node.data('description') || '').toLowerCase();
+                const aliases = node.data('aliases') || [];
                 
-                if (!name.includes(searchTerm) && !description.includes(searchTerm)) {
+                let matches = name.includes(searchTerm) || description.includes(searchTerm);
+                
+                // Also search in aliases for DBpedia concepts
+                if (!matches && aliases.length > 0) {
+                    matches = aliases.some(alias => alias.toLowerCase().includes(searchTerm));
+                }
+                
+                if (!matches) {
                     node.addClass('hidden');
                     node.connectedEdges().addClass('hidden');
                 }
@@ -501,18 +624,100 @@ class GraphManager {
     }
 
     /**
-     * Get graph statistics
+     * Get graph statistics including DBpedia metrics
      */
     getStats() {
         if (!this.graphData) return null;
+        
+        // Calculate DBpedia statistics
+        let dbpediaEnriched = 0;
+        let localConcepts = 0;
+        let dbpediaConcepts = 0;
+        
+        this.cy.nodes().forEach(node => {
+            const isDBpediaEnriched = node.data('dbpedia_enriched') || false;
+            const externalSource = node.data('external_source') || 'local';
+            
+            if (externalSource === 'dbpedia') {
+                dbpediaConcepts++;
+            } else if (isDBpediaEnriched) {
+                dbpediaEnriched++;
+            } else {
+                localConcepts++;
+            }
+        });
         
         return {
             nodes: this.graphData.nodes.length,
             edges: this.graphData.edges.length,
             visibleNodes: this.cy.nodes(':visible').length,
             visibleEdges: this.cy.edges(':visible').length,
+            dbpediaEnriched: dbpediaEnriched,
+            localConcepts: localConcepts,
+            dbpediaConcepts: dbpediaConcepts,
             ...this.graphData.stats
         };
+    }
+    
+    /**
+     * Get DBpedia-specific node information
+     */
+    getDBpediaNodeInfo(node) {
+        const nodeData = node.data();
+        
+        return {
+            isDBpediaEnriched: nodeData.dbpedia_enriched || false,
+            dbpediaURI: nodeData.dbpedia_uri || null,
+            dbpediaConfidence: nodeData.dbpedia_confidence || 0,
+            externalSource: nodeData.external_source || 'local',
+            aliases: nodeData.aliases || [],
+            properties: nodeData.properties || {}
+        };
+    }
+    
+    /**
+     * Filter nodes by data source
+     */
+    filterByDataSource(source) {
+        this.cy.nodes().forEach(node => {
+            const nodeSource = this.getNodeDataSource(node);
+            
+            if (source === 'all' || nodeSource === source) {
+                node.removeClass('hidden');
+            } else {
+                node.addClass('hidden');
+                node.connectedEdges().addClass('hidden');
+            }
+        });
+    }
+    
+    /**
+     * Get the data source of a node
+     */
+    getNodeDataSource(node) {
+        const externalSource = node.data('external_source') || 'local';
+        const isDBpediaEnriched = node.data('dbpedia_enriched') || false;
+        
+        if (externalSource === 'dbpedia') {
+            return 'dbpedia';
+        } else if (isDBpediaEnriched) {
+            return 'enriched';
+        } else {
+            return 'local';
+        }
+    }
+    
+    /**
+     * Get available data sources in the graph
+     */
+    getAvailableDataSources() {
+        const sources = new Set();
+        
+        this.cy.nodes().forEach(node => {
+            sources.add(this.getNodeDataSource(node));
+        });
+        
+        return Array.from(sources);
     }
 
     /**

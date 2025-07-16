@@ -141,3 +141,52 @@ def is_valid_concept_name(name: str) -> bool:
         return False
     
     return True
+
+
+def fix_acronym_casing(name: str) -> str:
+    """
+    Fix the casing of known financial acronyms.
+    
+    Args:
+        name: Concept name to fix
+        
+    Returns:
+        Name with proper acronym casing
+        
+    Examples:
+        >>> fix_acronym_casing("capm")
+        "CAPM"
+        >>> fix_acronym_casing("Var")
+        "VAR"
+        >>> fix_acronym_casing("Portfolio Theory")
+        "Portfolio Theory"
+    """
+    if not name or not isinstance(name, str):
+        return name
+    
+    # Known financial acronyms that should be uppercase
+    financial_acronyms = {
+        'capm': 'CAPM',
+        'var': 'VAR',
+        'apt': 'APT',
+        'etf': 'ETF',
+        'reit': 'REIT',
+        'ipo': 'IPO',
+        'roi': 'ROI',
+        'npv': 'NPV',
+        'irr': 'IRR',
+        'wacc': 'WACC',
+        'cvar': 'CVaR',
+        'esg': 'ESG',
+        'pe': 'PE',
+        'pb': 'PB',
+        'eps': 'EPS'
+    }
+    
+    # Check if the name (when normalized) is a known acronym
+    normalized = name.lower().strip()
+    if normalized in financial_acronyms:
+        return financial_acronyms[normalized]
+    
+    # Return original name if not a known acronym
+    return name
