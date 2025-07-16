@@ -23,6 +23,7 @@ poetry run python main.py server
 - **Dynamic Search** - Real-time concept search with intelligent suggestions
 - **Multiple Layouts** - 6 layout algorithms (force-directed, circular, grid, hierarchical, concentric, directed)
 - **Export Options** - PNG, SVG, and JSON export with high-resolution support
+- **Interactive Tooltips** - Enhanced metadata display on graph node hover
 
 ### 🎨 Phase 3 Enhancements (Production Ready)
 - **Performance Monitoring** - Real-time metrics, memory usage tracking, API performance
@@ -38,6 +39,13 @@ poetry run python main.py server
 - **Pre-commit Hooks** - Automated code quality, security, and testing checks
 - **Documentation** - Sphinx-based API documentation with GitHub Pages deployment
 - **Type Safety** - mypy type checking with comprehensive coverage
+
+### 🧠 Enhanced Graph Metadata (Latest)
+- **Complexity Analysis** - Automatic extraction of beginner/intermediate/advanced levels
+- **Prerequisite Mapping** - Identifies concept dependencies from document context
+- **Domain Classification** - Categorizes concepts by mathematics, finance, economics domains
+- **Advanced Search Filtering** - Filter by complexity, domain, and prerequisite relationships
+- **Expanded Symbol Support** - 150+ mathematical notation mappings including financial notation
 
 ## Features
 

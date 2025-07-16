@@ -1,24 +1,39 @@
-# Portfolio Optimizer Technical Documentation
+# AI Knowledge Graph System Technical Documentation
 
-## Project Refactoring Summary
+## Project Evolution Summary
 
-This document describes the comprehensive refactoring of the portfolio optimizer project to implement modern software engineering practices, improve maintainability, and enhance functionality.
+This document describes the comprehensive evolution of the AI Knowledge Graph System from a portfolio optimizer to a full-featured knowledge management platform with enhanced metadata capabilities and interactive web visualization.
 
 **Important: This is a Poetry-managed Python project. All dependencies should be installed via `poetry install` and all commands should be run via `poetry run` or within the Poetry virtual environment (`poetry shell`).**
 
-### Refactoring Overview
+### Latest Enhancement: Enhanced Graph Metadata (January 2025)
 
-The project has been refactored according to the following specifications:
+The system has been enhanced with advanced metadata extraction and interactive visualization capabilities:
 
-1. **Configuration Management**: Replaced ad-hoc config loading with Pydantic Settings
-2. **Logging**: Centralized logging setup using logging.config.dictConfig()
-3. **Plugin Architecture**: Implemented plugin system with entry points
-4. **PDF Ingestion & Math Detection**: Enhanced with ImprovedMathDetector class achieving 97.5% false positive reduction
-5. **Regex Performance**: Precompiled regex patterns for performance
-6. **CLI Refactor**: Implemented argparse subparsers for commands
-7. **Testing**: Comprehensive test suite with pytest fixtures
-8. **Code Quality**: Pre-commit hooks with Black, isort, and flake8
-9. **Documentation**: Updated README and comprehensive documentation
+1. **Automated Complexity Analysis**: Extracts beginner/intermediate/advanced levels from document context
+2. **Prerequisite Mapping**: Identifies concept dependencies using natural language processing
+3. **Domain Classification**: Categorizes concepts by mathematics, finance, economics domains
+4. **Advanced Search Filtering**: New API endpoints for filtering by complexity, domain, and prerequisites
+5. **Interactive Graph Tooltips**: Enhanced metadata display on node hover with LaTeX rendering
+6. **Expanded Symbol Support**: Extended mathematical notation from 50+ to 150+ LaTeX mappings
+
+### System Architecture Overview
+
+The system has evolved through several major phases:
+
+1. **Phase 1 - Foundation**: Core document processing and concept extraction
+2. **Phase 2 - Knowledge Graph**: Neo4j integration and relationship mapping
+3. **Phase 3 - Web Frontend**: Interactive visualization with advanced UI/UX
+4. **Phase 4 - Enhanced Metadata**: Current development with advanced extraction and filtering
+
+### Core Components
+
+1. **Document Processing**: Multi-format ingestion (PDF, HTML, DOCX, XML, LaTeX)
+2. **Mathematical Content Detection**: Enhanced formula extraction with 97.5% false positive reduction
+3. **Knowledge Graph Storage**: Neo4j-based concept relationship mapping
+4. **Web Visualization**: Interactive Cytoscape.js-based graph rendering
+5. **Search & Filtering**: Advanced query capabilities with metadata-based filtering
+6. **External Ontology Integration**: DBpedia and Wikidata knowledge enrichment
 
 ## Poetry Development Workflow
 
