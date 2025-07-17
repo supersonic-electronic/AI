@@ -44,6 +44,7 @@ dependencies = [
     "safety (>=3.0.0,<4.0.0)",
     "requests (>=2.32.4,<3.0.0)",
     "sparqlwrapper (>=2.0.0,<3.0.0)",
+    "ebooklib (>=0.18,<1.0.0)",
 ]
 
 
@@ -75,6 +76,7 @@ html = "src.ingestion.extractors.html:HTMLExtractor"
 docx = "src.ingestion.extractors.docx:DOCXExtractor"
 xml = "src.ingestion.extractors.xml:XMLExtractor"
 latex = "src.ingestion.extractors.latex:LaTeXExtractor"
+epub = "src.ingestion.extractors.epub:EPUBExtractor"
 
 # Example plugin entries - actual plugins would be added here
 # pdf_enhanced = "my_plugins.extractors:EnhancedPDFExtractor"

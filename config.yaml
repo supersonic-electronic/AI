@@ -36,7 +36,20 @@ math_ocr_fallback: false          # Use OCR fallback for complex formulas (requi
 separate_math_files: true         # Save mathematical blocks to separate .math files
 math_dir: "./data/math"           # Directory for mathematical formula files
 openai_api_key: ""                # OpenAI API key for math OCR (optional)
-math_detection_threshold: 3       # Minimum score for mathematical content detection (default: 3)
+math_detection_threshold: 0.3     # Minimum score for mathematical content detection
+
+# EPUB Extraction Configuration
+process_chapters_individually: true    # Process each chapter separately with chapter markers
+extract_mathml: true                   # Extract and convert MathML content to LaTeX
+include_toc: true                      # Include table of contents in metadata
+include_statistics: true               # Include document statistics (word count, etc.)
+include_structure: true                # Include document structure (headings, spine)
+remove_tags: ["script", "style", "nav", "header", "footer", "aside"]  # HTML tags to remove
+remove_comments: true                  # Remove HTML comments from content
+remove_empty_paragraphs: true         # Remove empty paragraph elements
+normalize_whitespace: true             # Normalize whitespace in extracted text
+remove_empty_lines: true              # Remove empty lines from text output
+html_parser: "lxml"                    # HTML parser for BeautifulSoup (lxml, html.parser)
 
 # File Handling
 encoding: "utf-8"                  # Text file encoding
@@ -63,6 +76,6 @@ chroma_collection_name: "document_embeddings"  # Chroma collection name
 # Processing Configuration
 processing:
   timeout_seconds: 300
-  chunk_size: 1500
-  chunk_overlap: 150
+  chunk_size: 500
+  chunk_overlap: 50
   batch_size: 50

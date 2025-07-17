@@ -8,6 +8,7 @@ from .html import HTMLExtractor
 from .docx import DOCXExtractor
 from .xml import XMLExtractor
 from .latex import LaTeXExtractor
+from .epub import EPUBExtractor
 from .document_detector import DocumentDetector
 
 __all__ = [
@@ -17,5 +18,6 @@ __all__ = [
     'DOCXExtractor',
     'XMLExtractor',
     'LaTeXExtractor',
+    'EPUBExtractor',
     'DocumentDetector',
 ]

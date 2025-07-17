@@ -12,6 +12,7 @@ from .html import HTMLExtractor
 from .docx import DOCXExtractor
 from .xml import XMLExtractor
 from .latex import LaTeXExtractor
+from .epub import EPUBExtractor
 
 
 class DocumentDetector:
@@ -30,6 +31,7 @@ class DocumentDetector:
             DOCXExtractor(),
             XMLExtractor(),
             LaTeXExtractor(),
+            EPUBExtractor(),
         ]
         
         # Build extension to extractor mapping
@@ -123,6 +125,7 @@ class DocumentDetector:
                 'text/xml': XMLExtractor,
                 'text/x-tex': LaTeXExtractor,
                 'application/x-tex': LaTeXExtractor,
+                'application/epub+zip': EPUBExtractor,
             }
             
             extractor_class = mime_map.get(mime_type)
@@ -160,9 +163,11 @@ class DocumentDetector:
                     return PDFExtractor()
                 
                 if binary_sample.startswith(b'PK\x03\x04'):
-                    # ZIP-based format (could be DOCX)
+                    # ZIP-based format (could be DOCX or EPUB)
                     if b'word/' in binary_sample or b'document.xml' in binary_sample:
                         return DOCXExtractor()
+                    elif b'META-INF/container.xml' in binary_sample or b'application/epub+zip' in binary_sample:
+                        return EPUBExtractor()
             
             except Exception:
                 pass
